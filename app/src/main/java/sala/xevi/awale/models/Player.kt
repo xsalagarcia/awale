@@ -2,7 +2,7 @@ package sala.xevi.awale.models
 
 import sala.xevi.awale.R
 
-class Player (var name: String, var levelAI: Int, var score: Int, var level: Levels = Levels.HUMAN){
+class Player (var name: String, var score: Int, var level: Levels = Levels.HUMAN){
     var previousScore = score
 
     /**

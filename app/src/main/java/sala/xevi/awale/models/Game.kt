@@ -36,6 +36,8 @@ class Game (var player1: Player, var player2: Player) {
     @Throws(IllegalMovementException::class)
     fun playBox(boxToPlay: Int) {
 
+        if (boxes[boxToPlay] == 0) throw IllegalMovementException()
+
         lastStateBoxs = boxes.copyOf()
         player1.previousScore = player1.score
         player2.previousScore = player2.score
@@ -75,10 +77,7 @@ class Game (var player1: Player, var player2: Player) {
             throw IllegalMovementException()
         }
 
-
         changeActivePlayer()
-
-
     }
 
     /**
@@ -89,18 +88,18 @@ class Game (var player1: Player, var player2: Player) {
     private fun totalSeedsAtPlayersField(player: Player): Int {
         assert(player == player1 || player == player2)
         var totalSeeds: Int = 0
-        if (player == player1) {
-            for (i in 0..5){
-                totalSeeds += boxes[i]
-            }
-        } else {
-            for (i in 6..11){
-                totalSeeds += boxes[i]
-            }
+        val startingBox = if (player == player1) 6 else 0
+        for (i in startingBox..(startingBox+5)){
+            totalSeeds += boxes[i]
         }
+
         return totalSeeds
     }
 
+    /**
+     * Returns the inactive player.
+     * @return The inactive [Player]
+     */
     private fun getInactivePlayer(): Player {
         return if (activePlayer == player1) player2
         else player1
@@ -112,13 +111,14 @@ class Game (var player1: Player, var player2: Player) {
      */
     fun isGameFinished(): Boolean {
         var isFinished = true
+
         if (player1.score > 24 || player2.score > 24) return isFinished
 
         var firstBoxToCheck: Int
         if (activePlayer == player1) {
-            firstBoxToCheck = 0
-        } else {
             firstBoxToCheck = 6
+        } else {
+            firstBoxToCheck = 0
         }
 
         val gameForCheck = copyMe()
@@ -139,16 +139,36 @@ class Game (var player1: Player, var player2: Player) {
      * @return An object representing a copy of the present game.
      */
     fun copyMe (): Game {
-        val gameCopied= Game(Player(player1.name, player1.levelAI,player1.score), Player(player2.name, player2.levelAI, player2.score))
+        val gameCopied= Game(Player(player1.name, player1.score), Player(player2.name, player2.score))
         if (gameCopied.isPlayer1Active() != isPlayer1Active()) gameCopied.changeActivePlayer()
         gameCopied.boxes = boxes.copyOf()
         gameCopied.lastStateBoxs = lastStateBoxs.copyOf()
         return gameCopied
+    }
+
+    /**
+     * Undo last movement if it's possible.
+     */
+    fun undoLastMov(){
+
+        var cantUndo = true
+        for (i in 0..boxes.size-1){
+            if (boxes[i] != lastStateBoxs[i]) {
+                cantUndo = false
+                break
+            }
+        }
+        if (cantUndo) return
+
+        player1.score = player1.previousScore
+        player2.score = player2.previousScore
+        boxes = lastStateBoxs.copyOf()
+        changeActivePlayer()
 
     }
 
-
-
-
+    fun scoreDifferenceP1minusP2():Int{
+        return player1.score - player2.score
+    }
 
 }

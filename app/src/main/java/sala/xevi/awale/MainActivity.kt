@@ -9,13 +9,14 @@ import android.view.ViewPropertyAnimator
 import android.widget.*
 import sala.xevi.awale.databinding.ActivityMainBinding
 import sala.xevi.awale.exceptions.IllegalMovementException
+import sala.xevi.awale.models.AwePlayer
 import sala.xevi.awale.models.Game
 import sala.xevi.awale.models.Player
 
 /**
  * The main activity has the board view representation.
  */
-class MainActivity (val game: Game = Game(Player("Player 1", 0 ,0), Player("Player 2", 0, 0))) : AppCompatActivity() {
+class MainActivity (val game: Game = Game(Player("Player 1", 0), Player("Player 2",  0))) : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
 
@@ -55,13 +56,15 @@ class MainActivity (val game: Game = Game(Player("Player 1", 0 ,0), Player("Play
         binding.aiSelector1.adapter = ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, resources.getStringArray(R.array.array_levels))
         binding.aiSelector2.adapter = ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, resources.getStringArray(R.array.array_levels))
 
+        binding.undoP1.setOnClickListener { undoLastMov() }
+        binding.undoP2.setOnClickListener { undoLastMov() }
         if (savedInstanceState == null) {
-            binding.namePlayer1ET.setText(game.player1.name)
-            binding.namePlayer2ET.setText(game.player2.name)
+            binding.namePlayer1ET.text = game.player1.name
+            binding.namePlayer2ET.text = game.player2.name
             updatePlayerInBold()
 
             //tests
-            //game.boxes = intArrayOf(0,2,2,2,2,2,2,2,2,8,2,2)
+            //game.boxes = intArrayOf(0,0,0,0,0,0,2,2,2,8,2,2)
             //updateIVBoxes()
         }
     }
@@ -81,9 +84,7 @@ class MainActivity (val game: Game = Game(Player("Player 1", 0 ,0), Player("Play
                 updateBoardAnimated(boxClicked, game.lastStateBoxs[boxClicked])
 
 
-                if (game.isGameFinished()) {
-                    showMessageFinishedGame()
-                }
+
             } catch (e: IllegalMovementException  ){
                 Toast.makeText(this, getString(R.string.illegal_movement), Toast.LENGTH_SHORT).show()
             }
@@ -96,7 +97,15 @@ class MainActivity (val game: Game = Game(Player("Player 1", 0 ,0), Player("Play
      * Shows a messaege when the game is finished.
      */
     private fun showMessageFinishedGame() {
-        Toast.makeText(this, getString(R.string.finished_game), Toast.LENGTH_LONG).show()
+
+        val winner = if (game.player1.score > game.player2.score)  {
+            game.player1.name
+        } else {
+            game.player2.name
+        }
+        binding.gameOverTV.text = getString(R.string.finished_game) + winner
+        binding.gameOverCV.visibility = View.VISIBLE
+
     }
 
 
@@ -254,7 +263,16 @@ class MainActivity (val game: Game = Game(Player("Player 1", 0 ,0), Player("Play
                     //animateReap(position, game.reapsLastMov)
                 //}
 
-            }.withEndAction { if (pendingPositions == 0 && game.reapsLastMov > 0) animateReap(position, game.reapsLastMov) }
+            }.withEndAction {
+                if (pendingPositions == 0) {//pendingPositions == 0 is the last animation
+                    if (game.reapsLastMov > 0) {
+                        animateReap(position, game.reapsLastMov)
+                    } else {
+                        finishedAnimation()
+                    }
+                }
+
+            }
         }
         return ani
     }
@@ -278,13 +296,25 @@ class MainActivity (val game: Game = Game(Player("Player 1", 0 ,0), Player("Play
                 if (total >1) {
                     animateReap (position -1,total -1)
                 } else {
-                    //updateIVBoxes()
+                    finishedAnimation()
                 }
 
-            }.withEndAction {
-                updateScores()
-                updatePlayerInBold()
             }
+        }
+    }
+
+    private fun finishedAnimation (){
+        //Potser es podria crear un fil que mentres la animació és present ja pensi la següent jugada. Iniciant-se abans de cridar la animació
+        //una vegada la animació acaba, si ja ha acabat de elaborar tirada, fer-la, i si no, esperar a que acabi.
+        updateScores()
+        updatePlayerInBold()
+        /*if (game.activePlayer.level != Player.Levels.HUMAN){
+            val boxToPlay = AwePlayer.play(game,1)
+            game.playBox(boxToPlay)
+            updateBoardAnimated(boxToPlay, game.lastStateBoxs[boxToPlay])
+        }*/
+        if (game.isGameFinished()) {
+            showMessageFinishedGame()
         }
     }
 
@@ -297,6 +327,16 @@ class MainActivity (val game: Game = Game(Player("Player 1", 0 ,0), Player("Play
         animateSowing (start, start, total, true).start()
     }
 
+    /**
+     * Undo last movement.
+     */
+    private fun undoLastMov() {
+        game.undoLastMov()
+        updateIVBoxes()
+        updateScores()
+        updatePlayerInBold()
+    }
+
 
     private val spinnerListener = object: AdapterView.OnItemSelectedListener {
         override fun onItemSelected(
@@ -305,7 +345,8 @@ class MainActivity (val game: Game = Game(Player("Player 1", 0 ,0), Player("Play
             position: Int,
             id: Long
         ) {
-            //if (view as Spinner == binding.aiSelector2)
+            game.player2.level = Player.Levels.values()[position]
+        //if (view as Spinner == binding.aiSelector2)
                // game.player2.level
             //Toast.makeText( this@MainActivity,parent!!.get, Toast.LENGTH_SHORT).show()
             //Toast.makeText( this@MainActivity, Player.Levels.values()[position].toString(), Toast.LENGTH_SHORT).show()
