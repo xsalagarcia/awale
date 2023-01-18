@@ -1,6 +1,7 @@
 package sala.xevi.awale.models
 
 import sala.xevi.awale.exceptions.IllegalMovementException
+import java.util.*
 
 class AwePlayer {
 
@@ -14,9 +15,9 @@ class AwePlayer {
          */
         fun play (game: Game, depth: Int) : Int {
 
-            val firstBoxToCheck = if (game.activePlayer == game.player1) 0 else 6
+            val firstBoxToCheck = if (game.activePlayer == game.player1) 7 else 0
             val listOfMovements =  mutableMapOf<Int, Game>() //a list of moves
-            for (i in firstBoxToCheck..firstBoxToCheck+6){
+            for (i in firstBoxToCheck..firstBoxToCheck+5){
                 try {
                     val resultGame = game.copyMe()
                     resultGame.playBox(i)
@@ -49,8 +50,8 @@ class AwePlayer {
             }
 
             val listOfMovements =  mutableMapOf<Int, Game>()
-            val firstBoxToCheck = if (node.activePlayer == node.player1) 0 else 6
-            for (i in firstBoxToCheck..firstBoxToCheck+6){
+            val firstBoxToCheck = if (node.activePlayer == node.player1) 6 else 0
+            for (i in firstBoxToCheck..firstBoxToCheck+5){
                 try {
                     val childNode = node.copyMe()
                     childNode.playBox(i)
@@ -80,7 +81,7 @@ class AwePlayer {
 
             else { //activePlayer is player1, max player
                 val iterator = listOfMovements.iterator()
-                while (iterator.hasNext() && newAlpha >= newBeta) {
+                while (iterator.hasNext() && newAlpha < newBeta) {
                     var value = alphaBetaPruning (iterator.next().value, depth-1, newAlpha, newBeta)
                     if (value > newAlpha) {
                         newAlpha = value
@@ -96,7 +97,19 @@ class AwePlayer {
          * @param player1Active is a boolean value that will be true if player1 is active. That is, best move is the one that obtains the lower difference between player1.score - player2.score after the move.
          */
         private fun bestMovement (movementsMap: Map<Int, Int>, player1Active: Boolean): Int {
-            var bestMov: Int = movementsMap.keys.first()
+            val random = Random()
+
+
+            val filteredMap = if (player1Active) {
+                movementsMap.filterValues { value -> movementsMap.values.max() == value}
+            } else {
+                movementsMap.filterValues { value -> movementsMap.values.min() == value}
+            }
+            val best =  filteredMap.keys.elementAt(random.nextInt(filteredMap.size))
+            return best
+        //return filteredMap[random.nextInt(filteredMap.size)] ?:0
+
+           /* var bestMov: Int = movementsMap.keys.first()
             movementsMap.forEach { (movement, scoreOfMovement) ->
                 if (player1Active) {  //player1 has to move. For player1 more is better
                     if (movementsMap[bestMov]!! < scoreOfMovement) {
@@ -108,7 +121,7 @@ class AwePlayer {
                     }
                 }
             }
-            return bestMov
+            return bestMov*/
         }
     }
 }

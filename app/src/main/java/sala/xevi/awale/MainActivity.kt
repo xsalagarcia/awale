@@ -305,14 +305,15 @@ class MainActivity (val game: Game = Game(Player("Player 1", 0), Player("Player 
 
     private fun finishedAnimation (){
         //Potser es podria crear un fil que mentres la animació és present ja pensi la següent jugada. Iniciant-se abans de cridar la animació
-        //una vegada la animació acaba, si ja ha acabat de elaborar tirada, fer-la, i si no, esperar a que acabi.
+        //una vegada la animació acaba, si ja ha acabat de elaborar tirada, fer-la, i si no, esperar a que acabi. AtomicBoolean, AtomicInteger...
+
         updateScores()
         updatePlayerInBold()
-        /*if (game.activePlayer.level != Player.Levels.HUMAN){
+        if (game.activePlayer.level != Player.Levels.HUMAN){
             val boxToPlay = AwePlayer.play(game,1)
             game.playBox(boxToPlay)
             updateBoardAnimated(boxToPlay, game.lastStateBoxs[boxToPlay])
-        }*/
+        }
         if (game.isGameFinished()) {
             showMessageFinishedGame()
         }
