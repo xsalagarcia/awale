@@ -46,11 +46,20 @@ class Game (var player1: Player, var player2: Player) {
 
         //sowing
         boxes[boxToPlay] = 0
-        for (i in 1 .. seeds){
+        var seedsToSow = seeds
+        var sowingBox = boxToPlay+1
+        while(seedsToSow>0){
+            if (!(seeds > 11 && boxToPlay == (sowingBox)%12)) { //https://www.myriad-online.com/resources/docs/awale/espanol/rules.htm rule 6
+                boxes[(sowingBox) % 12] = boxes[(sowingBox) % 12] + 1
+                seedsToSow--
+            }
+            sowingBox++
+        }
+        /*for (i in 1 .. seeds){
             if (!(seeds > 11 && boxToPlay == (boxToPlay + i)%12)) { //https://www.myriad-online.com/resources/docs/awale/espanol/rules.htm rule 6
                 boxes[(boxToPlay + i) % 12] = boxes[(boxToPlay + i) % 12] + 1
             }
-        }
+        }*/
 
         //reap
         reapsLastMov = 0

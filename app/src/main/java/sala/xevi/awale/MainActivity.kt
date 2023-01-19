@@ -64,7 +64,7 @@ class MainActivity (val game: Game = Game(Player("Player 1", 0), Player("Player 
             updatePlayerInBold()
 
             //tests
-            //game.boxes = intArrayOf(0,0,0,0,0,0,2,2,2,8,2,2)
+            //game.boxes = intArrayOf(6,0,0,7,3,0,0,0,3,0,2,24)
             //updateIVBoxes()
         }
     }
@@ -257,8 +257,9 @@ class MainActivity (val game: Game = Game(Player("Player 1", 0), Player("Player 
                 duration = animationSpeed
                 scaleXBy(-0.2f)
                 scaleYBy(-0.2f)
-                if (pendingPositions >0) {
-                    animateSowing (origin,position +1, pendingPositions -1, false)
+                if (pendingPositions >0 || (pendingPositions == 0 && origin%12 == position%12)) {
+                    val positionToSubstract = if(position == origin || origin%12-(position)%12 != 0) -1 else  0//
+                    animateSowing (origin,position +1, pendingPositions + positionToSubstract, false)
                 } //else if (game.reapsLastMov > 0){
                     //animateReap(position, game.reapsLastMov)
                 //}
