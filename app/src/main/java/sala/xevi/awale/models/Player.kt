@@ -5,6 +5,7 @@ import sala.xevi.awale.R
 class Player (var name: String, var score: Int, var level: Levels = Levels.HUMAN){
     var previousScore = score
 
+
     /**
      * Enum class. The strings will be array-levels
      */

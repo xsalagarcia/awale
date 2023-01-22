@@ -2,7 +2,7 @@
     <string name="app_name">Awale</string>
     <string name="seeds">seeds</string>
     <string name="illegal_movement">Illegal movement!</string>
-    <string name="finished_game">The game is over. The winner is </string>
+    <string name="finished_game">Game over. The winner is\u0020</string>
     <string name="human">Human</string>
     <string name="default_player2">Player 2</string>
     <string name="default_player1">Player 1</string>

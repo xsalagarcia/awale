@@ -6,6 +6,35 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
+    <FrameLayout
+        android:id="@+id/seedsNumberInfo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:elevation="1dp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:srcCompat="@drawable/seed" />
+
+        <TextView
+            android:id="@+id/seedsNumberInfoTV"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:text="4"
+            android:textAppearance="@style/TextAppearance.AppCompat.Large"
+            android:textColor="#FFFFFF"
+            android:textStyle="bold" />
+
+    </FrameLayout>
+
     <LinearLayout
         android:id="@+id/linearLayout"
         android:layout_width="match_parent"
@@ -15,6 +44,7 @@
         app:layout_constraintTop_toTopOf="parent">
 
         <LinearLayout
+            android:id="@+id/player2Layout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_weight="1"
@@ -70,8 +100,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:background="#FF9800"
-            android:backgroundTint="#FF9800"
+            android:background="@drawable/ic_my_wooden_background_flat2"
+            android:backgroundTint="#AF7319"
+            android:backgroundTintMode="src_atop"
             android:orientation="horizontal"
             android:paddingLeft="10dp"
             android:paddingRight="10dp">
@@ -86,7 +117,6 @@
                 android:background="?android:attr/selectableItemBackground"
                 android:clickable="true"
                 android:focusable="true"
-                android:tooltipText="dfdfs"
                 app:srcCompat="@drawable/box_4" />
 
             <ImageView
@@ -134,8 +164,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:background="#FF9800"
-            android:backgroundTint="#FF9800"
+            android:background="@drawable/ic_my_wooden_background_flat2"
+            android:backgroundTint="#AF7319"
             android:orientation="horizontal"
             android:paddingLeft="10dp"
             android:paddingRight="10dp">
@@ -221,6 +251,7 @@
                 android:layout_weight="1"
                 android:text="0"
                 android:textAppearance="@style/TextAppearance.AppCompat.Large" />
+
             <ImageButton
                 android:id="@+id/undoP1"
                 android:layout_width="wrap_content"

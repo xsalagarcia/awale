@@ -9,19 +9,23 @@ import sala.xevi.awale.exceptions.IllegalMovementException
 /**
  * Class representing the game.
  */
-class Game (var player1: Player, var player2: Player) {
+class Game (/**Player1, always human*/var player1: Player, var player2: Player) {
+
+
     var activePlayer: Player = player1 //The player which has to move.
-    var boxes: IntArray = intArrayOf(4,4,4,4,4,4,4,4,4,4,4,4) //representation of boxes.
-    var lastStateBoxs: IntArray = intArrayOf(4,4,4,4,4,4,4,4,4,4,4,4) //representation of last state of the boxes.
-    var reapsLastMov: Int = 0 //number of seeds reaps at the last movement
+
+    /**representation of boxes.*/
+    var boxes: IntArray = intArrayOf(4,4,4,4,4,4,4,4,4,4,4,4)
+
+    /**representation of last state of the boxes.*/
+    var lastStateBoxs: IntArray = intArrayOf(4,4,4,4,4,4,4,4,4,4,4,4)
+
+    /**Number of seeds reaps at the last move*/
+    var reapsLastMov: Int = 0
 
 
     fun changeActivePlayer(){
-        if (activePlayer == player1) {
-            activePlayer = player2
-        }else {
-            activePlayer = player1
-        }
+        activePlayer = if (activePlayer == player1) player2 else player1
     }
 
     fun isPlayer1Active() : Boolean{
@@ -62,7 +66,30 @@ class Game (var player1: Player, var player2: Player) {
         }*/
 
         //reap
+        //(sowingBox-1)%12 és la última en ser plantada
         reapsLastMov = 0
+        var boxToReap = 12+(sowingBox-1)%12
+        seeds += 12
+        var capture = true // rule 5
+        while (capture) {
+            if (boxes[boxToReap%12] == 2 || boxes[boxToReap%12] == 3){
+                if  ( ( (boxToReap%12 < 6) && activePlayer == player1) || (boxToReap%12 > 5 && activePlayer == player2) ) {
+                    activePlayer.score = boxes[boxToReap%12] + activePlayer.score
+                    boxes[boxToReap%12] = 0
+                    boxToReap--
+                    reapsLastMov++
+                } else {
+                    capture = false
+                }
+            } else {
+                capture = false
+            }
+        }
+        /*
+        //reap
+        //(sowingBox-1)%12 és la última en ser plantada
+        reapsLastMov = 0
+        if (seeds > 11) seeds++
         seeds += 12
         var capture = true // rule 5
         while (capture) {
@@ -78,7 +105,7 @@ class Game (var player1: Player, var player2: Player) {
             } else {
                 capture = false
             }
-        }
+        }*/
 
         if (totalSeedsAtPlayersField(getInactivePlayer())==0) {
             boxes = lastStateBoxs.copyOf()

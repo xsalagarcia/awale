@@ -12,11 +12,13 @@ import sala.xevi.awale.exceptions.IllegalMovementException
 import sala.xevi.awale.models.AwePlayer
 import sala.xevi.awale.models.Game
 import sala.xevi.awale.models.Player
+import java.util.*
+import kotlin.concurrent.timerTask
 
 /**
  * The main activity has the board view representation.
  */
-class MainActivity (val game: Game = Game(Player("Player 1", 0), Player("Player 2",  0))) : AppCompatActivity() {
+class MainActivity (var game: Game = Game(Player("Player 1", 0), Player("Player 2",  0))) : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
 
@@ -24,7 +26,11 @@ class MainActivity (val game: Game = Game(Player("Player 1", 0), Player("Player 
 
     private var animationSpeed:Long = 500
 
-    var isAIPlaying: Boolean = false;
+    var isAIPlayingOrUIMoving: Boolean = false;
+
+    private var previousGame: Game? = null;
+
+
 
     //For savedInstanceState Bundle.
     companion object {
@@ -48,6 +54,10 @@ class MainActivity (val game: Game = Game(Player("Player 1", 0), Player("Player 
 
         for (box in boxesIV){
             box.setOnClickListener { v-> boxClicked(v) }
+
+            box.setOnLongClickListener { longClickedBox(  boxesIV.indexOf(box) )}
+
+
         }
 
         binding.aiSelector1.onItemSelectedListener = spinnerListener
@@ -57,17 +67,32 @@ class MainActivity (val game: Game = Game(Player("Player 1", 0), Player("Player 
         binding.aiSelector2.adapter = ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, resources.getStringArray(R.array.array_levels))
 
         binding.undoP1.setOnClickListener { undoLastMov() }
-        binding.undoP2.setOnClickListener { undoLastMov() }
+        binding.undoP2.setOnClickListener { if (game.player2.level == Player.Levels.HUMAN) undoLastMov() else redoMachineMov() }
+
         if (savedInstanceState == null) {
             binding.namePlayer1ET.text = game.player1.name
             binding.namePlayer2ET.text = game.player2.name
             updatePlayerInBold()
 
             //tests
-            //game.boxes = intArrayOf(6,0,0,7,3,0,0,0,3,0,2,24)
+            //game.boxes = intArrayOf(2,2,2,2,2,2,3,3,3,3,6,2)
             //updateIVBoxes()
         }
+        binding.player2Layout.rotation= if (game.player2.level == Player.Levels.HUMAN) 180F else 0F
     }
+
+    /**
+     * Called when long click is done in a box.
+     * Shows the number of seeds from the long clicked box.
+     */
+    private fun longClickedBox(boxNumber: Int): Boolean {
+        binding.seedsNumberInfoTV.text = game.boxes[boxNumber].toString()
+        binding.seedsNumberInfo.rotation = if (!game.isPlayer1Active())  180F else 0F
+        binding.seedsNumberInfo.visibility = View.VISIBLE
+        Timer().schedule(timerTask { runOnUiThread{binding.seedsNumberInfo.visibility = View.GONE} }, 1000)
+        return true
+    }
+
 
     /**
      * Called when a box is clicked.
@@ -75,13 +100,16 @@ class MainActivity (val game: Game = Game(Player("Player 1", 0), Player("Player 
      */
     private fun boxClicked(v: View?) {
         val boxClicked:Int = boxesIV.indexOf(v) //gets the box number that is clicked.
-        if (!isAIPlaying && !game.isGameFinished() &&
+        if (!isAIPlayingOrUIMoving && !game.isGameFinished() &&
             (game.isPlayer1Active() && boxClicked > 5 || !game.isPlayer1Active() && boxClicked < 6) &&
             game.boxes[boxClicked] > 0) {
 
             try {
+                val previous = game.copyMe()
                 game.playBox(boxClicked)
-                updateBoardAnimated(boxClicked, game.lastStateBoxs[boxClicked])
+                previousGame = previous
+                isAIPlayingOrUIMoving = true
+                animateUpdateBoard(boxClicked, game.lastStateBoxs[boxClicked])
 
 
 
@@ -208,7 +236,8 @@ class MainActivity (val game: Game = Game(Player("Player 1", 0), Player("Player 
         }
         if (seedsNumber > 23) imageView.setImageResource(R.drawable.box_23)
 
-        imageView.tooltipText = seedsNumber.toString()+ " " + getString(R.string.seeds)
+
+
 
     }
 
@@ -244,8 +273,11 @@ class MainActivity (val game: Game = Game(Player("Player 1", 0), Player("Player 
             scaleYBy(0.2f)
         }.withEndAction {
             boxesIV[position % 12].animate().apply {
+
                 if (firstMov) {
                     putImageSeeds(boxesIV[(position)%12], 0)
+
+                    //boxesIV[(position)%12].background = null
                 } else {
                     if (origin%12 != position%12) {
                         putImageSeeds(boxesIV[(position) % 12], game.lastStateBoxs[(position) % 12] + 1 + (position-origin)/12)
@@ -269,7 +301,7 @@ class MainActivity (val game: Game = Game(Player("Player 1", 0), Player("Player 
                     if (game.reapsLastMov > 0) {
                         animateReap(position, game.reapsLastMov)
                     } else {
-                        finishedAnimation()
+                        animateFinished()
                     }
                 }
 
@@ -297,23 +329,28 @@ class MainActivity (val game: Game = Game(Player("Player 1", 0), Player("Player 
                 if (total >1) {
                     animateReap (position -1,total -1)
                 } else {
-                    finishedAnimation()
+                    animateFinished()
                 }
 
             }
         }
     }
 
-    private fun finishedAnimation (){
+    private fun animateFinished (){
         //Potser es podria crear un fil que mentres la animació és present ja pensi la següent jugada. Iniciant-se abans de cridar la animació
         //una vegada la animació acaba, si ja ha acabat de elaborar tirada, fer-la, i si no, esperar a que acabi. AtomicBoolean, AtomicInteger...
-
+        //https://developer.android.com/guide/background/threading#see-also
         updateScores()
         updatePlayerInBold()
+        for (i in 0..11){
+            boxesIV[i].background = null
+        }
         if (game.activePlayer.level != Player.Levels.HUMAN){
-            val boxToPlay = AwePlayer.play(game,1)
+            val boxToPlay = AwePlayer.play(game,game.activePlayer.level.ordinal -1)
             game.playBox(boxToPlay)
-            updateBoardAnimated(boxToPlay, game.lastStateBoxs[boxToPlay])
+            animateUpdateBoard(boxToPlay, game.lastStateBoxs[boxToPlay])
+        } else {
+            isAIPlayingOrUIMoving = false
         }
         if (game.isGameFinished()) {
             showMessageFinishedGame()
@@ -325,20 +362,45 @@ class MainActivity (val game: Game = Game(Player("Player 1", 0), Player("Player 
      * @param start the first box to change.
      * @param total The number of boxes to be changed.
      */
-    private fun updateBoardAnimated(start: Int, total: Int) {
+    private fun animateUpdateBoard(start: Int, total: Int) {
+        //animateSowing (start, start, total, true).setStartDelay(500).start()
+        //boxesIV[(position)%12].background = getDrawable(R.drawable.box_0)
+        for (i in 0..total){
+            boxesIV[(start+i)%12].background = getDrawable(R.drawable.box_0)
+        }
+
         animateSowing (start, start, total, true).start()
+
     }
 
     /**
      * Undo last movement.
      */
     private fun undoLastMov() {
+        //game.undoLastMov()
+        if (previousGame == null || isAIPlayingOrUIMoving) {
+            return
+        }
+        val player2level = game.player2.level
+        game = previousGame!!
+        game.player2.level = player2level
+        updateUIGame()
+
+    }
+
+    private fun redoMachineMov(){
+        if (AwePlayer.lastMov == null || isAIPlayingOrUIMoving || game.player2.level == Player.Levels.HUMAN) return
         game.undoLastMov()
+        updateUIGame()
+        game.playBox(AwePlayer.lastMov!!)
+        animateUpdateBoard(AwePlayer.lastMov!!, game.lastStateBoxs[AwePlayer.lastMov!!])
+    }
+
+    private fun updateUIGame() {
         updateIVBoxes()
         updateScores()
         updatePlayerInBold()
     }
-
 
     private val spinnerListener = object: AdapterView.OnItemSelectedListener {
         override fun onItemSelected(
@@ -348,15 +410,21 @@ class MainActivity (val game: Game = Game(Player("Player 1", 0), Player("Player 
             id: Long
         ) {
             game.player2.level = Player.Levels.values()[position]
-        //if (view as Spinner == binding.aiSelector2)
-               // game.player2.level
-            //Toast.makeText( this@MainActivity,parent!!.get, Toast.LENGTH_SHORT).show()
-            //Toast.makeText( this@MainActivity, Player.Levels.values()[position].toString(), Toast.LENGTH_SHORT).show()
+            if (position != 0) {
+                binding.undoP2.setImageDrawable(getDrawable(R.drawable.ic_baseline_refresh_24))
+                binding.player2Layout.rotation= 0F
+            } else {
+                binding.undoP2.setImageDrawable(getDrawable(R.drawable.ic_baseline_undo_24))
+                binding.player2Layout.rotation = 180F
+            }
+
         }
 
         override fun onNothingSelected(parent: AdapterView<*>?) {
             TODO("Not yet implemented")
         }
+
+
     }
 
 
