@@ -1,182 +1,194 @@
 package sala.xevi.awale
 
-import android.graphics.Typeface
-import android.graphics.drawable.AnimationDrawable
+import android.app.Activity
+import android.app.AlertDialog
+import android.content.Context
+import android.content.DialogInterface
+import android.content.Intent
+import android.content.res.ColorStateList
+import android.graphics.BlendModeColorFilter
+import android.graphics.Color
+import android.graphics.ColorFilter
+import android.graphics.PorterDuff
+import android.graphics.drawable.ColorStateListDrawable
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.os.Parcelable
+import android.view.DragEvent
 import android.view.View
-import android.view.ViewPropertyAnimator
-import android.widget.*
+
+import android.widget.ArrayAdapter
+import android.widget.SeekBar
+import android.widget.Toast
+import androidx.activity.result.ActivityResult
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.graphics.blue
+import androidx.core.graphics.green
+import androidx.core.graphics.red
+import androidx.preference.PreferenceManager.getDefaultSharedPreferences
 import sala.xevi.awale.databinding.ActivityMainBinding
-import sala.xevi.awale.exceptions.IllegalMovementException
-import sala.xevi.awale.models.AwePlayer
 import sala.xevi.awale.models.Game
 import sala.xevi.awale.models.Player
-import java.util.*
-import kotlin.concurrent.timerTask
+import java.io.FileNotFoundException
+import java.io.ObjectInputStream
+import java.io.ObjectOutputStream
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
-/**
- * The main activity has the board view representation.
- */
-class MainActivity (var game: Game = Game(Player("Player 1", 0), Player("Player 2",  0))) : AppCompatActivity() {
+
+class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
+    private var game: Game? = null
 
-    private lateinit var boxesIV: Array<ImageView>
-
-    private var animationSpeed:Long = 500
-
-    var isAIPlayingOrUIMoving: Boolean = false;
-
-    private var previousGame: Game? = null;
-
-
-
-    //For savedInstanceState Bundle.
-    companion object {
-        const val BOXES_VALUES = "boxesValues"
-        const val PLAYER1_NAME = "player1Name"
-        const val PLAYER2_NAME = "player2Name"
-        const val PLAYER1_SCORE = "player1Score"
-        const val PLAYER2_SCORE = "player2Score"
-        const val IS_PLAYER1_ACTIVE = "isPlayer1Active"
-        const val PLAYER1_LEVEL = "player1Level"
-        const val PLAYER2_LEVEL = "player2Level"
+    //https://stackoverflow.com/questions/61455381/how-to-replace-startactivityforresult-with-activity-result-apis
+    //this must be called out of playPressed function.
+    private val startForResult = registerForActivityResult( ActivityResultContracts.StartActivityForResult()) { result: ActivityResult ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            game = result.data!!.getParcelableExtra<Game>(GAME)
+            if (game != null) {
+                binding.resumeBtn.visibility = View.VISIBLE
+                binding.resumeSpc.visibility = View.VISIBLE
+            }
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        supportActionBar?.hide()
 
         binding = ActivityMainBinding.inflate(layoutInflater)
-        fillBoxesIVArray()
+
         setContentView(binding.root)
 
-        for (box in boxesIV){
-            box.setOnClickListener { v-> boxClicked(v) }
 
-            box.setOnLongClickListener { longClickedBox(  boxesIV.indexOf(box) )}
+        //https://stackoverflow.com/questions/15543186/how-do-i-create-colorstatelist-programmatically
+        binding.background.backgroundTintList = ColorStateList(arrayOf(intArrayOf(android.R.attr.state_enabled)), intArrayOf(Color.parseColor("#AF7319")))
 
+        binding.player2Spinner.adapter = ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, resources.getStringArray(R.array.array_levels))
 
-        }
+        binding.blueSB.setOnSeekBarChangeListener(seekBarListener)
+        binding.greenSB.setOnSeekBarChangeListener(seekBarListener)
+        binding.redSB.setOnSeekBarChangeListener(seekBarListener)
 
-        binding.aiSelector1.onItemSelectedListener = spinnerListener
-        binding.aiSelector1.onItemSelectedListener = spinnerListener
+        binding.startBtn.setOnClickListener { playPressed() }
 
-        binding.aiSelector1.adapter = ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, resources.getStringArray(R.array.array_levels))
-        binding.aiSelector2.adapter = ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, resources.getStringArray(R.array.array_levels))
+        binding.resumeBtn.setOnClickListener { resumePressed() }
 
-        binding.undoP1.setOnClickListener { undoLastMov() }
-        binding.undoP2.setOnClickListener { if (game.player2.level == Player.Levels.HUMAN) undoLastMov() else redoMachineMov() }
+        binding.saveBtn.setOnClickListener { saveGamePressed() }
+        binding.loadBtn.setOnClickListener { loadGamePressed() }
+
+        binding.customBoardSW.setOnCheckedChangeListener { buttonView, isChecked -> binding.background.visibility = if (isChecked) View.VISIBLE else View.GONE }
 
         if (savedInstanceState == null) {
-            binding.namePlayer1ET.text = game.player1.name
-            binding.namePlayer2ET.text = game.player2.name
-            updatePlayerInBold()
-
-            //tests
-            //game.boxes = intArrayOf(2,2,2,2,2,2,3,3,3,3,6,2)
-            //updateIVBoxes()
-        }
-        binding.player2Layout.rotation= if (game.player2.level == Player.Levels.HUMAN) 180F else 0F
-    }
-
-    /**
-     * Called when long click is done in a box.
-     * Shows the number of seeds from the long clicked box.
-     */
-    private fun longClickedBox(boxNumber: Int): Boolean {
-        binding.seedsNumberInfoTV.text = game.boxes[boxNumber].toString()
-        binding.seedsNumberInfo.rotation = if (!game.isPlayer1Active())  180F else 0F
-        binding.seedsNumberInfo.visibility = View.VISIBLE
-        Timer().schedule(timerTask { runOnUiThread{binding.seedsNumberInfo.visibility = View.GONE} }, 1000)
-        return true
-    }
-
-
-    /**
-     * Called when a box is clicked.
-     * @param v Is the box clicked.
-     */
-    private fun boxClicked(v: View?) {
-        val boxClicked:Int = boxesIV.indexOf(v) //gets the box number that is clicked.
-        if (!isAIPlayingOrUIMoving && !game.isGameFinished() &&
-            (game.isPlayer1Active() && boxClicked > 5 || !game.isPlayer1Active() && boxClicked < 6) &&
-            game.boxes[boxClicked] > 0) {
-
-            try {
-                val previous = game.copyMe()
-                game.playBox(boxClicked)
-                previousGame = previous
-                isAIPlayingOrUIMoving = true
-                animateUpdateBoard(boxClicked, game.lastStateBoxs[boxClicked])
-
-
-
-            } catch (e: IllegalMovementException  ){
-                Toast.makeText(this, getString(R.string.illegal_movement), Toast.LENGTH_SHORT).show()
+            binding.playWithTimeSW.setOnCheckedChangeListener { buttonView, isChecked ->
+                binding.minutesET.visibility = if (isChecked) View.VISIBLE else View.GONE
+                binding.minutesTV.visibility = if (isChecked) View.VISIBLE else View.GONE
             }
-        }
-
-
-    }
-
-    /**+
-     * Shows a messaege when the game is finished.
-     */
-    private fun showMessageFinishedGame() {
-
-        val winner = if (game.player1.score > game.player2.score)  {
-            game.player1.name
         } else {
-            game.player2.name
-        }
-        binding.gameOverTV.text = getString(R.string.finished_game) + winner
-        binding.gameOverCV.visibility = View.VISIBLE
 
+        }
+
+
+
+
+        setColorSliders(getDefaultSharedPreferences(this).getString(BACKGROUND_BOARD, "#AF7319")!!)
+
+        binding.minutesET.setText(getDefaultSharedPreferences(this).getInt(TIME_GAME, 10).toString())
+
+
+
+        //AlertDialog amb numberPicker(s)
     }
 
 
-    private fun updatePlayerInBold() {
-        if (game.isPlayer1Active()){
-            binding.namePlayer1ET.setTypeface(null, Typeface.BOLD)
-            binding.namePlayer2ET.setTypeface(null, Typeface.NORMAL)
-        } else {
-            binding.namePlayer2ET.setTypeface(null, Typeface.BOLD)
-            binding.namePlayer1ET.setTypeface(null, Typeface.NORMAL)
+
+    private fun playPressed() {
+        game = Game(Player(getString(R.string.default_player1)), Player(getString(R.string.default_player2)))
+        game!!.player2.level = Player.Levels.values()[binding.player2Spinner.selectedItemPosition]
+        if (binding.playWithTimeSW.isChecked ) {
+            game!!.player1.timeLeft = Integer.parseInt(binding.minutesET.text.toString())*60
+            game!!.player2.timeLeft = game!!.player1.timeLeft
         }
+       launchGameActivity()
+    }
+
+    private fun resumePressed() {
+        if (game== null) return
+        game!!.player2.level = Player.Levels.values()[binding.player2Spinner.selectedItemPosition]
+        launchGameActivity()
     }
 
     /**
-     * Puts the ImageView boxes into an Array<Box>
+     * Launches GameActivity. game hasn't to be null.
+     * Called from [loadGamePressed], [resumePressed] or [playPressed].
      */
-    private fun fillBoxesIVArray (){
-        boxesIV = arrayOf(
-            binding.box0,
-            binding.box1,
-            binding.box2,
-            binding.box3,
-            binding.box4,
-            binding.box5,
-            binding.box6,
-            binding.box7,
-            binding.box8,
-            binding.box9,
-            binding.box10,
-            binding.box11,
-        )
+    private fun launchGameActivity(){
+        val intent = Intent(this, GameActivity::class.java)
+        intent.putExtra(GAME, game as Parcelable)
+        intent.putExtra(BACKGROUND_BOARD, binding.background.backgroundTintList)
+        startForResult.launch(intent)
+    }
+
+    private fun saveGamePressed() {
+        if (game == null) return
+        baseContext.openFileOutput(SAVED_GAME, Context.MODE_PRIVATE).use {
+            val oos = ObjectOutputStream(it)
+            oos.writeObject(LocalDateTime.now())
+            oos.writeObject(game)
+            oos.close()
+            it.close()
+        }
+    }
+
+    private fun loadGamePressed() {
+        try {
+            baseContext.openFileInput(SAVED_GAME).use {
+
+                val ois = ObjectInputStream(it)
+                val ldt = ois.readObject() as LocalDateTime
+                val g = ois.readObject() as Game
+                ois.close()
+                it.close()
+                AlertDialog.Builder(this).apply {
+                    setPositiveButton(getString(R.string.ok),
+                        DialogInterface.OnClickListener { dialog, which -> game = g; resumePressed() })
+                    setNegativeButton(getString(R.string.cancel), null)
+                    setTitle(R.string.continue_this_game)
+                    setMessage(getString( R.string.saved_at) + ldt.format(DateTimeFormatter.ofPattern("dd/MM/YYYY - HH:mm:ss")))
+                }.show()
+
+
+            }
+        } catch ( e:  FileNotFoundException) {
+            Toast.makeText(this, getString(R.string.no_saved_game), Toast.LENGTH_LONG).show()
+        }
+
+    }
+
+
+
+    private fun setColorSliders(color: String) {
+        binding.greenSB.progress = Color.parseColor(color).green
+        binding.blueSB.progress = Color.parseColor(color).blue
+        binding.redSB.progress = Color.parseColor(color).red
     }
 
 
     override fun onSaveInstanceState(outState: Bundle) {
-        // Saves the current game state
+        // Saves the status of the activity
         outState?.run {
-            putIntArray(BOXES_VALUES, game.boxes)
-            putInt(PLAYER1_SCORE, game.player1.score)
-            putInt(PLAYER2_SCORE, game.player2.score)
-            putString(PLAYER1_NAME, game.player1.name)
-            putString(PLAYER2_NAME, game.player2.name)
-            putBoolean(IS_PLAYER1_ACTIVE, game.isPlayer1Active())
+            putParcelable(GAME, game)
+            putBoolean(IS_TIME_ACTIVE, binding.playWithTimeSW.isChecked)
+            putBoolean(CUSTOM_BOARD_ACTIVE, binding.customBoardSW.isChecked)
+            putInt(RED_SLIDER, binding.redSB.progress)
+            putInt(BLUE_SLIDER, binding.blueSB.progress)
+            putInt(GREEN_SLIDER, binding.greenSB.progress)
+            putInt(MINUTES, Integer.parseInt ( binding.minutesET.text.toString() ))
+            putInt(PLAYER2_LEVEL, binding.player2Spinner.selectedItemPosition)
+
         }
 
         super.onSaveInstanceState(outState)
@@ -188,245 +200,49 @@ class MainActivity (var game: Game = Game(Player("Player 1", 0), Player("Player 
 
         // Restore state members from saved instance
         savedInstanceState.run {
-            game.player1.score = getInt(PLAYER1_SCORE)
-            game.player2.score = getInt(PLAYER2_SCORE)
-            game.player1.name = getString(PLAYER1_NAME)!!
-            game.player2.name = getString(PLAYER2_NAME)!!
-            if (!getBoolean(IS_PLAYER1_ACTIVE)) game.changeActivePlayer()
-            game.boxes = getIntArray(BOXES_VALUES)!!.copyOf()
-            binding.namePlayer1ET.text = game.player1.name
-            binding.namePlayer2ET.text = game.player2.name
-        }
-        updateIVBoxes()
-        updateScores()
-        updatePlayerInBold()
-    }
+            game = getParcelable(GAME)
+            binding.playWithTimeSW.isChecked = getBoolean(IS_TIME_ACTIVE)
+            binding.customBoardSW.isChecked = getBoolean(CUSTOM_BOARD_ACTIVE)
+            binding.redSB.progress = getInt(RED_SLIDER)
+            binding.blueSB.progress = getInt(BLUE_SLIDER)
+            binding.greenSB.progress = getInt(GREEN_SLIDER)
+            binding.minutesET.setText(getInt(MINUTES).toString())
+            binding.player2Spinner.setSelection(getInt(PLAYER2_LEVEL))
 
-    /**
-     * Puts an image representing a number of seeds into the ImageView.
-     * @param imageView The ImageView where will be put the seeds.
-     * @param seedsNumber The number of seeds to be put.
-     */
-    private fun putImageSeeds (imageView: ImageView, seedsNumber: Int){
-        when(seedsNumber){
-            0->imageView.setImageResource(R.drawable.box_0)
-            1->imageView.setImageResource(R.drawable.box_1)
-            2->imageView.setImageResource(R.drawable.box_2)
-            3->imageView.setImageResource(R.drawable.box_3)
-            4->imageView.setImageResource(R.drawable.box_4)
-            5->imageView.setImageResource(R.drawable.box_5)
-            6->imageView.setImageResource(R.drawable.box_6)
-            7->imageView.setImageResource(R.drawable.box_7)
-            8->imageView.setImageResource(R.drawable.box_8)
-            9->imageView.setImageResource(R.drawable.box_9)
-            10->imageView.setImageResource(R.drawable.box_10)
-            11->imageView.setImageResource(R.drawable.box_11)
-            12->imageView.setImageResource(R.drawable.box_12)
-            13->imageView.setImageResource(R.drawable.box_13)
-            14->imageView.setImageResource(R.drawable.box_14)
-            15->imageView.setImageResource(R.drawable.box_15)
-            16->imageView.setImageResource(R.drawable.box_16)
-            17->imageView.setImageResource(R.drawable.box_17)
-            18->imageView.setImageResource(R.drawable.box_18)
-            19->imageView.setImageResource(R.drawable.box_19)
-            20->imageView.setImageResource(R.drawable.box_20)
-            21->imageView.setImageResource(R.drawable.box_21)
-            22->imageView.setImageResource(R.drawable.box_22)
-            23->imageView.setImageResource(R.drawable.box_23)
-        }
-        if (seedsNumber > 23) imageView.setImageResource(R.drawable.box_23)
-
-
-
-
-    }
-
-    /**
-     * Puts the image in agreement with the [game] representation.
-     */
-    private fun updateIVBoxes(){
-        for (i in 0..11){
-            putImageSeeds( boxesIV[i], game.boxes[i])
-        }
-    }
-
-    /**
-     * Updates the scores in agreement with the [game] representation.
-     */
-    private fun updateScores(){
-        binding.scorePlayer2TV.text = game.player2.score.toString()
-        binding.scorePlayer1TV.text = game.player1.score.toString()
-    }
-
-    /**
-     * Recursive function for sowing animation.
-     * @param origin The origin of the movement, where the player pick up their seeds.
-     * @param position The box position of the animation.
-     * @param pendingPositions The pending boxes to be animated.
-     * @param firstMov true if the animation is on the first movement. The box will be without seeds at the first animation/image change.
-     */
-    private fun animateSowing (origin: Int, position: Int, pendingPositions: Int, firstMov: Boolean) : ViewPropertyAnimator{
-        val ani = boxesIV[position % 12].animate().apply {
-
-            duration = animationSpeed
-            scaleXBy(0.2f)
-            scaleYBy(0.2f)
-        }.withEndAction {
-            boxesIV[position % 12].animate().apply {
-
-                if (firstMov) {
-                    putImageSeeds(boxesIV[(position)%12], 0)
-
-                    //boxesIV[(position)%12].background = null
-                } else {
-                    if (origin%12 != position%12) {
-                        putImageSeeds(boxesIV[(position) % 12], game.lastStateBoxs[(position) % 12] + 1 + (position-origin)/12)
-                    } else {
-                        //putImageSeeds(boxesIV[(position) % 12], (position-origin)/12)// Don't do this because of https://www.myriad-online.com/resources/docs/awale/espanol/rules.htm rule 6
-                    }
-
-                }
-                duration = animationSpeed
-                scaleXBy(-0.2f)
-                scaleYBy(-0.2f)
-                if (pendingPositions >0 || (pendingPositions == 0 && origin%12 == position%12)) {
-                    val positionToSubstract = if(position == origin || origin%12-(position)%12 != 0) -1 else  0//
-                    animateSowing (origin,position +1, pendingPositions + positionToSubstract, false)
-                } //else if (game.reapsLastMov > 0){
-                    //animateReap(position, game.reapsLastMov)
-                //}
-
-            }.withEndAction {
-                if (pendingPositions == 0) {//pendingPositions == 0 is the last animation
-                    if (game.reapsLastMov > 0) {
-                        animateReap(position, game.reapsLastMov)
-                    } else {
-                        animateFinished()
-                    }
-                }
-
-            }
-        }
-        return ani
-    }
-
-    /**
-     * recursive function for reap animation. Called when there are seeds to reap, after [animateSowing] finishes.
-     * @param position The box to reap.
-     * @param total number of the boxes to reap.
-     */
-    private fun animateReap (position: Int, total:Int){
-        boxesIV[position%12].animate().apply{
-            duration = animationSpeed
-            scaleXBy(0.2f)
-            scaleYBy(0.2f)
-        }.withEndAction {
-            boxesIV[position%12].animate().apply {
-                putImageSeeds(boxesIV[position%12], 0)
-                duration = animationSpeed
-                scaleXBy(-0.2f)
-                scaleYBy(-0.2f)
-                if (total >1) {
-                    animateReap (position -1,total -1)
-                } else {
-                    animateFinished()
-                }
-
-            }
-        }
-    }
-
-    private fun animateFinished (){
-        //Potser es podria crear un fil que mentres la animació és present ja pensi la següent jugada. Iniciant-se abans de cridar la animació
-        //una vegada la animació acaba, si ja ha acabat de elaborar tirada, fer-la, i si no, esperar a que acabi. AtomicBoolean, AtomicInteger...
-        //https://developer.android.com/guide/background/threading#see-also
-        updateScores()
-        updatePlayerInBold()
-        for (i in 0..11){
-            boxesIV[i].background = null
-        }
-        if (game.activePlayer.level != Player.Levels.HUMAN){
-            val boxToPlay = AwePlayer.play(game,game.activePlayer.level.ordinal -1)
-            game.playBox(boxToPlay)
-            animateUpdateBoard(boxToPlay, game.lastStateBoxs[boxToPlay])
-        } else {
-            isAIPlayingOrUIMoving = false
-        }
-        if (game.isGameFinished()) {
-            showMessageFinishedGame()
-        }
-    }
-
-    /**
-     * After a valid movement, this function is called to animate the change of the game.
-     * @param start the first box to change.
-     * @param total The number of boxes to be changed.
-     */
-    private fun animateUpdateBoard(start: Int, total: Int) {
-        //animateSowing (start, start, total, true).setStartDelay(500).start()
-        //boxesIV[(position)%12].background = getDrawable(R.drawable.box_0)
-        for (i in 0..total){
-            boxesIV[(start+i)%12].background = getDrawable(R.drawable.box_0)
         }
 
-        animateSowing (start, start, total, true).start()
-
     }
 
-    /**
-     * Undo last movement.
-     */
-    private fun undoLastMov() {
-        //game.undoLastMov()
-        if (previousGame == null || isAIPlayingOrUIMoving) {
-            return
-        }
-        val player2level = game.player2.level
-        game = previousGame!!
-        game.player2.level = player2level
-        updateUIGame()
 
-    }
 
-    private fun redoMachineMov(){
-        if (AwePlayer.lastMov == null || isAIPlayingOrUIMoving || game.player2.level == Player.Levels.HUMAN) return
-        game.undoLastMov()
-        updateUIGame()
-        game.playBox(AwePlayer.lastMov!!)
-        animateUpdateBoard(AwePlayer.lastMov!!, game.lastStateBoxs[AwePlayer.lastMov!!])
-    }
 
-    private fun updateUIGame() {
-        updateIVBoxes()
-        updateScores()
-        updatePlayerInBold()
-    }
 
+
+
+    /*
     private val spinnerListener = object: AdapterView.OnItemSelectedListener {
-        override fun onItemSelected(
-            parent: AdapterView<*>?,
-            view: View?,
-            position: Int,
-            id: Long
-        ) {
-            game.player2.level = Player.Levels.values()[position]
-            if (position != 0) {
-                binding.undoP2.setImageDrawable(getDrawable(R.drawable.ic_baseline_refresh_24))
-                binding.player2Layout.rotation= 0F
-            } else {
-                binding.undoP2.setImageDrawable(getDrawable(R.drawable.ic_baseline_undo_24))
-                binding.player2Layout.rotation = 180F
-            }
-
+        override fun onItemSelected (parent: AdapterView<*>?,view: View?,position: Int,id: Long) {
+            //do something when is selected.
         }
 
         override fun onNothingSelected(parent: AdapterView<*>?) {
             TODO("Not yet implemented")
         }
+    }*/
 
-
+    /**A SeekBarListener for color selection*/
+    private val seekBarListener = object: SeekBar.OnSeekBarChangeListener{
+        override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+            val newColor = "#" + String.format("%02X", binding.redSB.progress) + String.format("%02X", binding.greenSB.progress) + String.format("%02X", binding.blueSB.progress)
+            binding.background.backgroundTintList = ColorStateList(arrayOf(intArrayOf(android.R.attr.state_enabled)), intArrayOf(Color.parseColor(newColor)))
+        }
+        override fun onStartTrackingTouch(seekBar: SeekBar?) {
+            //do nothing
+        }
+        override fun onStopTrackingTouch(seekBar: SeekBar?) {
+            //do nothing
+        }
     }
-
 
 
 }

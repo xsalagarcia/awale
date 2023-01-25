@@ -6,8 +6,20 @@
     <string name="human">Human</string>
     <string name="default_player2">Player 2</string>
     <string name="default_player1">Player 1</string>
-    <string-array
-        name="array_levels">
+    <string name="player2_options">Player 2 options</string>
+    <string name="save">Save</string>
+    <string name="play">Play</string>
+    <string name="minutes">Minutes</string>
+    <string name="play_with_time">Play with time</string>
+    <string name="custom_board">Custom board color</string>
+    <string name="start">Start</string>
+    <string name="resume">resume</string>
+    <string name="no_saved_game">You don\'t have a saved game.</string>
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
+    <string name="continue_this_game">Continue this game?</string>
+    <string name="saved_at">Saved at\u0020</string>
+    <string-array name="array_levels">
         <item>Human</item>
         <item>Silly machine</item>
         <item>Not so silly</item>

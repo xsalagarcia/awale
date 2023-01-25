@@ -1,6 +1,11 @@
 package sala.xevi.awale.models
 
+import android.os.Parcel
+import android.os.Parcelable
 import sala.xevi.awale.exceptions.IllegalMovementException
+import java.io.Externalizable
+import java.io.ObjectInput
+import java.io.ObjectOutput
 
 //https://es.wikipedia.org/wiki/Oware
 //https://www.myriad-online.com/resources/docs/awale/espanol/rules.htm
@@ -9,10 +14,13 @@ import sala.xevi.awale.exceptions.IllegalMovementException
 /**
  * Class representing the game.
  */
-class Game (/**Player1, always human*/var player1: Player, var player2: Player) {
+class Game (/**Player1, always human*/): Parcelable, Externalizable {
 
+    lateinit var player1: Player
 
-    var activePlayer: Player = player1 //The player which has to move.
+    lateinit var player2: Player
+
+    lateinit var activePlayer: Player  //The player which has to move.
 
     /**representation of boxes.*/
     var boxes: IntArray = intArrayOf(4,4,4,4,4,4,4,4,4,4,4,4)
@@ -22,6 +30,22 @@ class Game (/**Player1, always human*/var player1: Player, var player2: Player) 
 
     /**Number of seeds reaps at the last move*/
     var reapsLastMov: Int = 0
+
+    //parcelable
+    constructor(parcel: Parcel) : this() {
+        player1 = parcel.readParcelable(Player::class.java.classLoader)!!
+        player2 = parcel.readParcelable(Player::class.java.classLoader)!!
+        activePlayer = if (parcel.readInt() == 1) player1 else player2
+        boxes = parcel.createIntArray()!!
+        lastStateBoxs = parcel.createIntArray()!!
+        reapsLastMov = parcel.readInt()
+    }
+
+    constructor(player1: Player, player2: Player) : this() {
+        this.player1 = player1
+        this.player2 = player2
+        activePlayer = player1
+    }
 
 
     fun changeActivePlayer(){
@@ -206,5 +230,55 @@ class Game (/**Player1, always human*/var player1: Player, var player2: Player) 
     fun scoreDifferenceP1minusP2():Int{
         return player1.score - player2.score
     }
+
+    //Parcelable
+    override fun writeToParcel(parcel: Parcel, flags: Int) {
+        parcel.writeParcelable(player1, flags)
+        parcel.writeParcelable(player2, flags)
+        parcel.writeInt(if (isPlayer1Active())1 else 0)
+        parcel.writeIntArray(boxes)
+        parcel.writeIntArray(lastStateBoxs)
+        parcel.writeInt(reapsLastMov)
+    }
+
+    //Parcelable
+    override fun describeContents(): Int {
+        return 0
+    }
+
+    //parcelable
+    companion object CREATOR : Parcelable.Creator<Game> {
+        override fun createFromParcel(parcel: Parcel): Game {
+            return Game(parcel)
+        }
+
+        override fun newArray(size: Int): Array<Game?> {
+            return arrayOfNulls(size)
+        }
+    }
+
+    override fun writeExternal(out: ObjectOutput?) {
+        out!!.apply{
+            writeObject(player1)
+            writeObject(player2)
+            writeBoolean(isPlayer1Active())
+            writeObject(boxes)
+            writeObject(lastStateBoxs)
+            writeInt(reapsLastMov)
+        }
+    }
+
+    override fun readExternal(oi: ObjectInput?) {
+        oi!!.apply {
+            player1 = readObject() as Player
+            player2 = readObject() as Player
+            activePlayer = if(readBoolean()) player1 else player2
+            boxes = readObject() as IntArray
+            lastStateBoxs = readObject() as IntArray
+            reapsLastMov = readInt()
+
+        }
+    }
+
 
 }
