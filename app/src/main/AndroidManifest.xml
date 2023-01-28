@@ -7,16 +7,18 @@
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@drawable/box_4"
         android:label="@string/app_name"
-        android:roundIcon="@mipmap/ic_launcher_round"
+        android:roundIcon="@drawable/box_4"
         android:supportsRtl="true"
         android:theme="@style/Theme.Awale"
         tools:targetApi="31" >
         <activity
             android:name=".GameActivity"
+            android:screenOrientation="landscape"
             android:exported="false"
             />
+        <!--portrait-->
         <activity
             android:name=".MainActivity"
             android:exported="true" >

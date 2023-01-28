@@ -99,15 +99,13 @@ class AwePlayer {
          * @param player1Active is a boolean value that will be true if player1 is active. That is, best move is the one that obtains the lower difference between player1.score - player2.score after the move.
          */
         private fun bestMove(movementsMap: Map<Int, Int>, player1Active: Boolean): Int {
-            val random = Random()
-
 
             val filteredMap = if (player1Active) {
                 movementsMap.filterValues { value -> movementsMap.values.max() == value }
             } else {
                 movementsMap.filterValues { value -> movementsMap.values.min() == value }
             }
-            return filteredMap.keys.elementAt(random.nextInt(filteredMap.size))
+            return filteredMap.keys.elementAt(Random().nextInt(filteredMap.size))
 
         }
     }

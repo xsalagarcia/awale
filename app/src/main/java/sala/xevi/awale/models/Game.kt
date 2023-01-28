@@ -6,6 +6,7 @@ import sala.xevi.awale.exceptions.IllegalMovementException
 import java.io.Externalizable
 import java.io.ObjectInput
 import java.io.ObjectOutput
+import java.util.*
 
 //https://es.wikipedia.org/wiki/Oware
 //https://www.myriad-online.com/resources/docs/awale/espanol/rules.htm
@@ -14,12 +15,14 @@ import java.io.ObjectOutput
 /**
  * Class representing the game.
  */
-class Game (/**Player1, always human*/): Parcelable, Externalizable {
-
+class Game (): Parcelable, Externalizable {
+    /**Representation of player1*/
     lateinit var player1: Player
 
+    /**Representation of player2*/
     lateinit var player2: Player
 
+    /**May be [player1] or [player2]*/
     lateinit var activePlayer: Player  //The player which has to move.
 
     /**representation of boxes.*/
@@ -44,7 +47,17 @@ class Game (/**Player1, always human*/): Parcelable, Externalizable {
     constructor(player1: Player, player2: Player) : this() {
         this.player1 = player1
         this.player2 = player2
-        activePlayer = player1
+
+        activePlayer = if (Random().nextBoolean()) player1 else player2
+    }
+
+    /**
+     * Constructor, to be used with [copyMe]
+     */
+    constructor(player1: Player, player2: Player, isPlayer1Active: Boolean): this() {
+        this.player1 = player1
+        this.player2 = player2
+        this.activePlayer = if (isPlayer1Active) player1 else player2
     }
 
 
@@ -109,27 +122,7 @@ class Game (/**Player1, always human*/): Parcelable, Externalizable {
                 capture = false
             }
         }
-        /*
-        //reap
-        //(sowingBox-1)%12 és la última en ser plantada
-        reapsLastMov = 0
-        if (seeds > 11) seeds++
-        seeds += 12
-        var capture = true // rule 5
-        while (capture) {
-            if (boxes[(seeds+boxToPlay) % 12] == 2 || boxes[(seeds+boxToPlay) % 12] == 3){
-                if  ( ( ((seeds+boxToPlay)%12 < 6) && activePlayer == player1) || ((seeds+boxToPlay)%12 > 5 && activePlayer == player2) ) {
-                    activePlayer.score = boxes[(seeds + boxToPlay) % 12] + activePlayer.score
-                    boxes[(seeds + boxToPlay) % 12] = 0
-                    seeds--
-                    reapsLastMov++
-                } else {
-                    capture = false
-                }
-            } else {
-                capture = false
-            }
-        }*/
+
 
         if (totalSeedsAtPlayersField(getInactivePlayer())==0) {
             boxes = lastStateBoxs.copyOf()
@@ -147,7 +140,7 @@ class Game (/**Player1, always human*/): Parcelable, Externalizable {
      */
     private fun totalSeedsAtPlayersField(player: Player): Int {
         assert(player == player1 || player == player2)
-        var totalSeeds: Int = 0
+        var totalSeeds = 0
         val startingBox = if (player == player1) 6 else 0
         for (i in startingBox..(startingBox+5)){
             totalSeeds += boxes[i]
@@ -172,14 +165,9 @@ class Game (/**Player1, always human*/): Parcelable, Externalizable {
     fun isGameFinished(): Boolean {
         var isFinished = true
 
-        if (player1.score > 24 || player2.score > 24) return isFinished
+        if (player1.score > 24 || player2.score > 24 || player1.timeLeft <0 || player2.timeLeft < 0) return isFinished
 
-        var firstBoxToCheck: Int
-        if (activePlayer == player1) {
-            firstBoxToCheck = 6
-        } else {
-            firstBoxToCheck = 0
-        }
+        val firstBoxToCheck = if (activePlayer == player1) 6 else 0
 
         val gameForCheck = copyMe()
         for (i in firstBoxToCheck..(firstBoxToCheck+5)){ //Test if there is no possible movement
@@ -191,6 +179,17 @@ class Game (/**Player1, always human*/): Parcelable, Externalizable {
                 //do nothing
             }
         }
+
+        if (isFinished) {
+            for (i in 0..5) {
+                player2.score = player2.score + boxes[i]
+                boxes[i] = 0
+            }
+            for (i in 6..11) {
+                player1.score = player1.score + boxes[i]
+                boxes[i] = 0
+            }
+        }
         return isFinished
     }
 
@@ -199,8 +198,7 @@ class Game (/**Player1, always human*/): Parcelable, Externalizable {
      * @return An object representing a copy of the present game.
      */
     fun copyMe (): Game {
-        val gameCopied= Game(Player(player1.name, player1.score), Player(player2.name, player2.score))
-        if (gameCopied.isPlayer1Active() != isPlayer1Active()) gameCopied.changeActivePlayer()
+        val gameCopied = Game(Player(player1.name, player1.score), Player(player2.name, player2.score), isPlayer1Active())
         gameCopied.boxes = boxes.copyOf()
         gameCopied.lastStateBoxs = lastStateBoxs.copyOf()
         return gameCopied
@@ -227,6 +225,10 @@ class Game (/**Player1, always human*/): Parcelable, Externalizable {
 
     }
 
+    /**
+     * Returns score difference.
+     * @return player1.score - player2.score
+     */
     fun scoreDifferenceP1minusP2():Int{
         return player1.score - player2.score
     }
@@ -276,7 +278,6 @@ class Game (/**Player1, always human*/): Parcelable, Externalizable {
             boxes = readObject() as IntArray
             lastStateBoxs = readObject() as IntArray
             reapsLastMov = readInt()
-
         }
     }
 

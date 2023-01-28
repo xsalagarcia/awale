@@ -7,4 +7,19 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="light_gray">#FFF0F0F0</color>
+    <color name="default_board">#AF7319</color>
+    <color name="red_selector">#DD0000</color>
+    <color name="blue_selector">#0000BB</color>
+    <color name="green_selector">#00BB00</color>
+
+<!--
+    <color name="primaryColor">#ffb74d</color>
+    <color name="primaryLightColor">#ffe97d</color>
+    <color name="primaryDarkColor">#c88719</color>
+    <color name="secondaryColor">#ffab91</color>
+    <color name="secondaryLightColor">#ffddc1</color>
+    <color name="secondaryDarkColor">#c97b63</color>
+    <color name="primaryTextColor">#000000</color>
+    <color name="secondaryTextColor">#000000</color>-->
 </resources>

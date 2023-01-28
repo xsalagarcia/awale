@@ -12,7 +12,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
 
-        android:backgroundTint="#F0F0F0"
+        android:backgroundTint="@color/light_gray"
         android:elevation="5dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -107,6 +107,25 @@
         </LinearLayout>
 
             <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/speed_animation" />
+
+                <SeekBar
+                    android:id="@+id/animationBar"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layoutDirection="rtl"
+                    android:max="1000"
+                    android:progress="500" />
+            </LinearLayout>
+
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="match_parent"
                 android:orientation="horizontal"
@@ -153,6 +172,8 @@
                     android:layout_weight="1"
                     android:layoutDirection="rtl"
                     android:text="@string/custom_board" />
+
+
             </LinearLayout>
 
             <LinearLayout
@@ -160,7 +181,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:background="@drawable/ic_my_wooden_background_flat2"
-                android:backgroundTint="#1010F0"
+                android:backgroundTint="@color/default_board"
                 android:visibility="gone"
                 android:orientation="horizontal">
 
@@ -175,27 +196,27 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:max="255"
-                        android:progressBackgroundTint="#FF0000"
-                        android:progressTint="#FF0000"
-                        android:thumbTint="#FF0000" />
+                        android:progressBackgroundTint="@color/red_selector"
+                        android:progressTint="@color/red_selector"
+                        android:thumbTint="@color/red_selector" />
 
                     <SeekBar
                         android:id="@+id/blueSB"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:max="255"
-                        android:progressBackgroundTint="#0000FF"
-                        android:progressTint="#0000FF"
-                        android:thumbTint="#0000FF" />
+                        android:progressBackgroundTint="@color/blue_selector"
+                        android:progressTint="@color/blue_selector"
+                        android:thumbTint="@color/blue_selector" />
 
                     <SeekBar
                         android:id="@+id/greenSB"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:max="255"
-                        android:progressBackgroundTint="#00FF00"
-                        android:progressTint="#00FF00"
-                        android:thumbTint="#00FF00" />
+                        android:progressBackgroundTint="@color/green_selector"
+                        android:progressTint="@color/green_selector"
+                        android:thumbTint="@color/green_selector" />
 
                 </LinearLayout>
 

@@ -2,6 +2,8 @@ package sala.xevi.awale
 
 import android.app.Activity
 import android.content.Intent
+import android.content.res.ColorStateList
+import android.graphics.Color
 import android.graphics.Typeface
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
@@ -9,6 +11,8 @@ import android.os.Parcelable
 import android.view.View
 import android.view.ViewPropertyAnimator
 import android.widget.*
+import androidx.annotation.ColorInt
+import kotlinx.coroutines.Runnable
 import sala.xevi.awale.databinding.ActivityGameBinding
 import sala.xevi.awale.exceptions.IllegalMovementException
 import sala.xevi.awale.models.AwePlayer
@@ -22,18 +26,29 @@ import kotlin.concurrent.timerTask
  */
 class GameActivity () : AppCompatActivity() {
 
-       //var game: Game = Game(Player("Player 1", 0), Player("Player 2",  0))
+
     private lateinit var binding: ActivityGameBinding
 
+    /**An array of [ImageView] for each box.*/
     private lateinit var boxesIV: Array<ImageView>
 
+    /**Reference for speed animation*/
     private var animationSpeed:Long = 500
 
-    var isAIPlayingOrUIMoving: Boolean = false;
+    /**When it's true, some controls do nothing (i.ex. player can't move).*/
+    private var isAIPlayingOrUIMoving: Boolean = false
 
+    /**Game representation*/
     private lateinit var game: Game
 
-    private var previousGame: Game? = null;
+    /**Last game state*/
+    private var previousGame: Game? = null
+
+    /**Task doing clock function*/
+    private lateinit var  clock: TimerTask
+
+    private var animateMove: ViewPropertyAnimator? = null
+
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -45,9 +60,20 @@ class GameActivity () : AppCompatActivity() {
         fillBoxesIVArray()
         setContentView(binding.root)
 
+        ///
 
+        binding.undoP1.setOnClickListener { undoLastMov() }
+        binding.undoP2.setOnClickListener { if (game.player2.level == Player.Levels.HUMAN) undoLastMov() else redoMachineMov() }
+
+        binding.playAgainBtn.setOnClickListener{playAgain()}
+
+        for (box in boxesIV){
+            box.setOnClickListener { v-> boxClicked(v) }
+            box.setOnLongClickListener { longClickedBox(  boxesIV.indexOf(box) )}
+        }
 
         if (savedInstanceState == null) {
+            animationSpeed = intent.getIntExtra(SPEED_ANIMATION, 500).toLong()
             game = intent.getParcelableExtra<Game>(GAME)!!
             binding.player1Background.backgroundTintList =intent.getParcelableExtra(BACKGROUND_BOARD)
             binding.player2Background.backgroundTintList =intent.getParcelableExtra(BACKGROUND_BOARD)
@@ -55,34 +81,94 @@ class GameActivity () : AppCompatActivity() {
             binding.namePlayer1ET.text = game.player1.name
             binding.namePlayer2ET.text = game.player2.name
 
+            /*
+            val c = Color.parseColor("#30"+Integer.toHexString(binding.player2Background.backgroundTintList!!.defaultColor).substring(2))
+            binding.constraintLayout.backgroundTintList =  ColorStateList(arrayOf(intArrayOf(-android.R.attr.state_enabled)), intArrayOf(c))
+            */
+
             checkUndoPlayer2Image()
             updateIVBoxes()
             updateScores()
             updatePlayerInBold()
+
+            if (game.player1.timeLeft != Int.MAX_VALUE){
+                clock = timerTask {updateTimer() }
+                Timer().schedule(clock,1000,1000 )
+            }
+
+            if (game.player2.level != Player.Levels.HUMAN && !game.isPlayer1Active()){
+                callAwePlayer()
+            }
 
             //tests
             //game.boxes = intArrayOf(2,2,2,2,2,2,3,3,3,3,6,2)
             //updateIVBoxes()
         }
 
-        binding.undoP1.setOnClickListener { undoLastMov() }
-        binding.undoP2.setOnClickListener { if (game.player2.level == Player.Levels.HUMAN) undoLastMov() else redoMachineMov() }
 
-        for (box in boxesIV){
-            box.setOnClickListener { v-> boxClicked(v) }
-            box.setOnLongClickListener { longClickedBox(  boxesIV.indexOf(box) )}
+
+    }
+
+
+    /**
+     * Starts a thread for AI movement. When AI returns his movement, calls[Game.playBox] and [animateUpdateBoard]
+     */
+    private fun callAwePlayer () {
+        isAIPlayingOrUIMoving = true
+        Thread(Runnable {
+            val boxToPlay = AwePlayer.play(game,game.activePlayer.level.ordinal -1)
+            runOnUiThread {
+                game.playBox(boxToPlay)
+                animateUpdateBoard(boxToPlay, game.lastStateBoxs[boxToPlay])
+            }
+        }).start()
+    }
+
+
+    /**
+     * Called when playAgainBtn is pressed (Appears when the game is over).
+     * Reload
+     */
+    private fun playAgain () {
+        val newGame = Game(Player(game.player1.name), Player(game.player2.name))
+        newGame.player2.level = game.player2.level
+        newGame.player1.timeLeft = intent.getIntExtra(TIME_GAME, Int.MAX_VALUE)
+        newGame.player2.timeLeft = intent.getIntExtra(TIME_GAME, Int.MAX_VALUE)
+        game = newGame
+        if (game.player1.timeLeft != Int.MAX_VALUE) {
+            clock = timerTask {updateTimer() }
+            Timer().schedule(clock,1000,1000 )
+        }
+        binding.gameOverCV.visibility = View.GONE
+        checkUndoPlayer2Image()
+        updateIVBoxes()
+        updateScores()
+        updatePlayerInBold()
+
+        isAIPlayingOrUIMoving = false
+        if (!game.isPlayer1Active() && game.player2.level != Player.Levels.HUMAN){
+            callAwePlayer()
         }
 
+    }
 
-
-
-
-
+    /**
+     * Called every 1 second if [clock] is running. Updates the times and checks if time is out (and game is over).
+     */
+    private fun updateTimer(){
+        runOnUiThread {
+            game.activePlayer.timeLeft--
+            binding.player1Timer.text = String.format("%02d:%02d", game.player1.timeLeft/60, game.player1.timeLeft%60)
+            binding.player2Timer.text = String.format("%02d:%02d", game.player2.timeLeft/60, game.player2.timeLeft%60)
+            if(game.isGameFinished()) showMessageFinishedGame()
+        }
     }
 
     /**
      * Called when long click is done in a box.
      * Shows the number of seeds from the long clicked box.
+     * @param boxNumber Is the long clicked box.
+     * @return true always.
      */
     private fun longClickedBox(boxNumber: Int): Boolean {
         binding.seedsNumberInfoTV.text = game.boxes[boxNumber].toString()
@@ -95,7 +181,7 @@ class GameActivity () : AppCompatActivity() {
 
     /**
      * Called when a box is clicked.
-     * @param v Is the box clicked.
+     * @param v Is the clicked box.
      */
     private fun boxClicked(v: View?) {
         val boxClicked:Int = boxesIV.indexOf(v) //gets the box number that is clicked.
@@ -109,9 +195,6 @@ class GameActivity () : AppCompatActivity() {
                 previousGame = previous
                 isAIPlayingOrUIMoving = true
                 animateUpdateBoard(boxClicked, game.lastStateBoxs[boxClicked])
-
-
-
             } catch (e: IllegalMovementException  ){
                 Toast.makeText(this, getString(R.string.illegal_movement), Toast.LENGTH_SHORT).show()
             }
@@ -121,21 +204,33 @@ class GameActivity () : AppCompatActivity() {
     }
 
     /**+
-     * Shows a messaege when the game is finished.
+     * Shows a message when the game is finished.
+     * Stops the clock.
      */
     private fun showMessageFinishedGame() {
 
-        val winner = if (game.player1.score > game.player2.score)  {
-            game.player1.name
+        isAIPlayingOrUIMoving = true
+        clock.cancel()
+        if (game.player2.timeLeft<0 || game.player1.score > game.player2.score)  {
+            binding.gameOverTV.text = getString(R.string.finished_game, game.player1.name)
+        } else if (game.player1.timeLeft < 0 || game.player2.score > game.player1.score) {
+            binding.gameOverTV.text = getString(R.string.finished_game, game.player1.name)
         } else {
-            game.player2.name
+            binding.gameOverTV.text = getString(R.string.finsished_game_tie)
         }
-        binding.gameOverTV.text = getString(R.string.finished_game) + winner
+
+        if (game.player2.timeLeft <0 || game.player1.timeLeft < 0) {
+            binding.gameOverTV.text = getString(R.string.time_over) + System.lineSeparator() + binding.gameOverTV.text.toString()
+        }
+
         binding.gameOverCV.visibility = View.VISIBLE
 
     }
 
 
+    /**
+     * Updates the name of the player, in bold the active player.
+     */
     private fun updatePlayerInBold() {
         if (game.isPlayer1Active()){
             binding.namePlayer1ET.setTypeface(null, Typeface.BOLD)
@@ -169,9 +264,15 @@ class GameActivity () : AppCompatActivity() {
 
     override fun onSaveInstanceState(outState: Bundle) {
         // Saves the current game state
-        outState?.run {
+        if (animateMove!= null) animateMove!!.cancel()
+        outState.run {
             putParcelable(GAME, game)
+            putLong(SPEED_ANIMATION, animationSpeed)
             putParcelable(BACKGROUND_BOARD, binding.player2Background.backgroundTintList)
+        }
+
+        if (game.player1.timeLeft != Int.MAX_VALUE){
+            clock.cancel()
         }
 
         super.onSaveInstanceState(outState)
@@ -183,25 +284,38 @@ class GameActivity () : AppCompatActivity() {
 
         // Restore state members from saved instance
         savedInstanceState.run {
+            animationSpeed = getLong(SPEED_ANIMATION)
             game = getParcelable(GAME)!!
             binding.namePlayer1ET.text = game.player1.name
             binding.namePlayer2ET.text = game.player2.name
             binding.player1Background.backgroundTintList = getParcelable(BACKGROUND_BOARD)!!
             binding.player2Background .backgroundTintList = binding.player1Background.backgroundTintList
+
+
+        }
+        if (game.player1.timeLeft != Int.MAX_VALUE){
+            clock = timerTask {updateTimer() }
+            Timer().schedule(clock,1000,1000 )
         }
         checkUndoPlayer2Image()
         updateIVBoxes()
         updateScores()
         updatePlayerInBold()
+        /*if (game.player1.timeLeft != Int.MAX_VALUE){
+            binding.player1Timer.visibility = View.VISIBLE
+            binding.player2Timer.visibility = View.VISIBLE
+        }*/
     }
-
 
     override fun onBackPressed() {
         setResult(Activity.RESULT_OK, Intent().putExtra(GAME, if(!game.isGameFinished()) game as Parcelable else null ))
         finish()
     }
 
-
+    /**
+     * Checks if player2 undo button will be refresh (AI) or undo (Human) and
+     * if player2Layout is rotated(Human) or not(AI).
+     */
     private fun checkUndoPlayer2Image() {
         if (game.player2.level != Player.Levels.HUMAN) {
             binding.undoP2.setImageDrawable(getDrawable(R.drawable.ic_baseline_refresh_24))
@@ -211,6 +325,7 @@ class GameActivity () : AppCompatActivity() {
             binding.player2Layout.rotation = 180F
         }
     }
+
     /**
      * Puts an image representing a number of seeds into the ImageView.
      * @param imageView The ImageView where will be put the seeds.
@@ -244,10 +359,6 @@ class GameActivity () : AppCompatActivity() {
             23->imageView.setImageResource(R.drawable.box_23)
         }
         if (seedsNumber > 23) imageView.setImageResource(R.drawable.box_23)
-
-
-
-
     }
 
     /**
@@ -268,11 +379,12 @@ class GameActivity () : AppCompatActivity() {
     }
 
     /**
-     * Recursive function for sowing animation.
+     * Recursive function for sowing animation. If the player reaps, calls [animateReap] at last. If not, calls [animateFinished]
      * @param origin The origin of the movement, where the player pick up their seeds.
      * @param position The box position of the animation.
      * @param pendingPositions The pending boxes to be animated.
      * @param firstMov true if the animation is on the first movement. The box will be without seeds at the first animation/image change.
+     * @return The animation, for next function.
      */
     private fun animateSowing (origin: Int, position: Int, pendingPositions: Int, firstMov: Boolean) : ViewPropertyAnimator{
         val ani = boxesIV[position % 12].animate().apply {
@@ -293,17 +405,15 @@ class GameActivity () : AppCompatActivity() {
                     } else {
                         //putImageSeeds(boxesIV[(position) % 12], (position-origin)/12)// Don't do this because of https://www.myriad-online.com/resources/docs/awale/espanol/rules.htm rule 6
                     }
-
                 }
+
                 duration = animationSpeed
                 scaleXBy(-0.2f)
                 scaleYBy(-0.2f)
                 if (pendingPositions >0 || (pendingPositions == 0 && origin%12 == position%12)) {
                     val positionToSubstract = if(position == origin || origin%12-(position)%12 != 0) -1 else  0//
                     animateSowing (origin,position +1, pendingPositions + positionToSubstract, false)
-                } //else if (game.reapsLastMov > 0){
-                    //animateReap(position, game.reapsLastMov)
-                //}
+                }
 
             }.withEndAction {
                 if (pendingPositions == 0) {//pendingPositions == 0 is the last animation
@@ -313,7 +423,6 @@ class GameActivity () : AppCompatActivity() {
                         animateFinished()
                     }
                 }
-
             }
         }
         return ani
@@ -321,6 +430,7 @@ class GameActivity () : AppCompatActivity() {
 
     /**
      * recursive function for reap animation. Called when there are seeds to reap, after [animateSowing] finishes.
+     * When finishes calls [animateFinished]
      * @param position The box to reap.
      * @param total number of the boxes to reap.
      */
@@ -345,49 +455,50 @@ class GameActivity () : AppCompatActivity() {
         }
     }
 
+    /**
+     * Called when [animateSowing] or [animateReap] (if has been called) is finished.
+     * Calls [updateScores] and [updatePlayerInBold], restores the boxes background and
+     * if AI is playing, calls a thread for AI movement and plays it.
+     * Finally, turns [isAIPlayingOrUIMoving] false and checks if game is finished.
+     * If game is finished, calls [showMessageFinishedGame].
+     */
     private fun animateFinished (){
-        //Potser es podria crear un fil que mentres la animació és present ja pensi la següent jugada. Iniciant-se abans de cridar la animació
-        //una vegada la animació acaba, si ja ha acabat de elaborar tirada, fer-la, i si no, esperar a que acabi. AtomicBoolean, AtomicInteger...
-        //https://developer.android.com/guide/background/threading#see-also
         updateScores()
         updatePlayerInBold()
         for (i in 0..11){
             boxesIV[i].background = null
         }
         if (game.activePlayer.level != Player.Levels.HUMAN){
-            val boxToPlay = AwePlayer.play(game,game.activePlayer.level.ordinal -1)
-            game.playBox(boxToPlay)
-            animateUpdateBoard(boxToPlay, game.lastStateBoxs[boxToPlay])
+            callAwePlayer()
         } else {
             isAIPlayingOrUIMoving = false
         }
         if (game.isGameFinished()) {
+            updateScores()
             showMessageFinishedGame()
         }
     }
 
     /**
-     * After a valid movement, this function is called to animate the change of the game.
+     * After a valid movement, this function is called to animate the change of the game. First
+     * puts background on the related boxes and starts the animation with [animateSowing].
      * @param start the first box to change.
      * @param total The number of boxes to be changed.
      */
     private fun animateUpdateBoard(start: Int, total: Int) {
-        //animateSowing (start, start, total, true).setStartDelay(500).start()
-        //boxesIV[(position)%12].background = getDrawable(R.drawable.box_0)
         for (i in 0..total){
             boxesIV[(start+i)%12].background = getDrawable(R.drawable.box_0)
         }
-
-        animateSowing (start, start, total, true).start()
-
+        animateMove = animateSowing (start, start, total, true)
+        animateMove!!.start()
     }
 
     /**
-     * Undo last movement.
+     * Undoes last movement.
      */
     private fun undoLastMov() {
-        //game.undoLastMov()
-        if (previousGame == null || isAIPlayingOrUIMoving) {
+
+        if (previousGame == null || isAIPlayingOrUIMoving) { //previousGame == null if the game is at the start.
             return
         }
         val player2level = game.player2.level
@@ -397,23 +508,26 @@ class GameActivity () : AppCompatActivity() {
 
     }
 
+    /**
+     * Redoes the machine movement.
+     */
     private fun redoMachineMov(){
         if (AwePlayer.lastMov == null || isAIPlayingOrUIMoving || game.player2.level == Player.Levels.HUMAN) return
+
         game.undoLastMov()
         updateUIGame()
         game.playBox(AwePlayer.lastMov!!)
         animateUpdateBoard(AwePlayer.lastMov!!, game.lastStateBoxs[AwePlayer.lastMov!!])
     }
 
+    /**
+     * Updates boxes, scores and player in bold calling [updateIVBoxes], [updateScores] and [updatePlayerInBold].
+     */
     private fun updateUIGame() {
         updateIVBoxes()
         updateScores()
         updatePlayerInBold()
     }
-
-
-
-
 
 
 }

@@ -13,15 +13,15 @@ class Player () : Parcelable, Externalizable {
     lateinit var name: String
     var score: Int = 0
     var level: Levels = Levels.HUMAN
-    var timeLeft: Int = Int.MIN_VALUE
+    var timeLeft: Int = Int.MAX_VALUE
     var previousScore = score
 
     //parcelable
     constructor(parcel: Parcel) : this() {
         name = parcel.readString()!!
         score = parcel.readInt()
-        previousScore = parcel.readInt()
         level = Levels.values()[ parcel.readInt()]
+        previousScore = parcel.readInt()
         timeLeft = parcel.readInt()
     }
 
@@ -45,7 +45,8 @@ class Player () : Parcelable, Externalizable {
         NOT_SO_SILLY,
         INTERMEDIATE,
         SMART,
-        VERY_SMART;
+        VERY_SMART,
+        WONT_WIN;
 
     } //resources.getStringArray(R.array.array_levels)[Player.Levels.VERY_SMART.ordinal] <-- will get the number, and we have an array in R.strings
 
