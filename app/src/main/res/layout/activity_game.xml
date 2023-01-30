@@ -61,7 +61,6 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-
             android:orientation="horizontal">
 
             <TextView
@@ -70,8 +69,8 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
                 android:layout_weight="0"
-                android:text="@string/default_player2"
-                android:textAppearance="@style/TextAppearance.AppCompat.Large" />
+                style="@style/TextViewPlayer"
+                android:text="@string/default_player2"/>
 
 
             <ImageView
@@ -241,13 +240,15 @@
             android:orientation="horizontal">
 
             <TextView
+
                 android:id="@+id/namePlayer1ET"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
                 android:layout_weight="0"
+                style="@style/TextViewPlayer"
                 android:text="@string/default_player1"
-                android:textAppearance="@style/TextAppearance.AppCompat.Large" />
+/>
 
 
             <ImageView

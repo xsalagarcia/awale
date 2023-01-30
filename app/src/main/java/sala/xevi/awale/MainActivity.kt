@@ -7,6 +7,7 @@ import android.content.DialogInterface
 import android.content.Intent
 import android.content.res.ColorStateList
 import android.graphics.Color
+import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Parcelable
@@ -75,6 +76,8 @@ class MainActivity : AppCompatActivity() {
             binding.minutesET.visibility = if (isChecked) View.VISIBLE else View.GONE
             binding.minutesTV.visibility = if (isChecked) View.VISIBLE else View.GONE
         }
+        binding.moreOptionsBtn.setOnClickListener { moreOptionsPressed() }
+        binding.infoGameBtn.setOnClickListener { infoGamePressed() }
 
         binding.minutesET.filters= (arrayOf(object: InputFilter {//MAX 999 MINUTES
             override fun filter(source: CharSequence?,start: Int,end: Int,dest: Spanned?,dstart: Int,dend: Int): CharSequence {
@@ -91,6 +94,9 @@ class MainActivity : AppCompatActivity() {
             binding.animationBar.progress = getDefaultSharedPreferences(this).getInt(SPEED_ANIMATION, 500)
             binding.minutesET.setText(getDefaultSharedPreferences(this).getInt(TIME_GAME, 10).toString())
             binding.player2Spinner.setSelection(getDefaultSharedPreferences(this).getInt(PLAYER2_LEVEL, 0))
+            binding.namePlayer1ET.setText(getDefaultSharedPreferences(this).getString(PLAYER1_NAME, getString(R.string.default_player1)))
+            binding.namePlayer1ET.setText(getDefaultSharedPreferences(this).getString(PLAYER2_NAME, getString(R.string.default_player1)))
+
         }
     }
 
@@ -99,7 +105,7 @@ class MainActivity : AppCompatActivity() {
      * selected time if it's active and calls [launchGameActivity].
       */
     private fun playPressed() {
-        game = Game(Player(getString(R.string.default_player1)), Player(getString(R.string.default_player2)))
+        game = Game(Player(binding.namePlayer1ET.text.toString()), Player(binding.namePlayer2ET.text.toString()))
         game!!.player2.level = Player.Levels.values()[binding.player2Spinner.selectedItemPosition]
         if (binding.playWithTimeSW.isChecked ) {
             game!!.player1.timeLeft = Integer.parseInt(binding.minutesET.text.toString())*60
@@ -140,23 +146,56 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * Saves the current [game], if exists.
+     * Shows a message to confirm. If the user press OK, saves the current [game], if exists.
      */
     private fun saveGamePressed() {
         if (game == null) return
-        baseContext.openFileOutput(SAVED_GAME, Context.MODE_PRIVATE).use {
-            val oos = ObjectOutputStream(it)
-            try {
-                oos.writeObject(LocalDateTime.now())
-                oos.writeObject(game)
-                oos.close()
-                Toast.makeText(this, getString(R.string.saved_game), Toast.LENGTH_LONG).show()
-            } catch (e: Exception) {
-                Toast.makeText(this, getString(R.string.couldnt_save_game), Toast.LENGTH_SHORT).show()
+
+        AlertDialog.Builder(this).apply {
+            setPositiveButton(getString(R.string.ok)) { _, _ ->
+                //If the user confirms, saves the game.
+                baseContext.openFileOutput(SAVED_GAME, Context.MODE_PRIVATE).use {
+                    val oos = ObjectOutputStream(it)
+                    try {
+                        oos.writeObject(LocalDateTime.now())
+                        oos.writeObject(game)
+                        oos.close()
+                        Toast.makeText(context, getString(R.string.saved_game), Toast.LENGTH_LONG).show()
+                    } catch (e: Exception) {
+                        Toast.makeText(context, getString(R.string.couldnt_save_game), Toast.LENGTH_SHORT).show()
+                    }
+                    it.close()
+                }
             }
-                it.close()
+
+            setNegativeButton(getString(R.string.cancel), null)
+            setTitle(R.string.save_this_game)
+            setMessage(getString( R.string.save_warning))
+        }.show()
+
+    }
+
+    /**
+     * Called when [ActivityMainBinding.moreOptionsBtn] is clicked. Shows more options
+     */
+    private fun moreOptionsPressed() {
+
+        if (binding.moreOptionsLayout.visibility == View.GONE) {
+                binding.moreOptionsLayout.visibility = View.VISIBLE
+                binding.moreOptionsBtn.rotation = 180f
+        } else {
+                binding.moreOptionsLayout.visibility = View.GONE
+                binding.moreOptionsBtn.rotation = 0f
         }
     }
+
+    /**
+     * Called when [ActivityMainBinding.infoGameBtn] is clicked. Shows awale wikipedia page.
+     */
+    private fun infoGamePressed() {
+        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(getString(R.string.awaleWeb))))
+    }
+
 
     /**
      * Loads a saved [Game].
@@ -230,6 +269,8 @@ class MainActivity : AppCompatActivity() {
             putBoolean(IS_TIME_ACTIVE, binding.playWithTimeSW.isChecked)
             putBoolean(CUSTOM_BOARD_ACTIVE, binding.customBoardSW.isChecked)
             putInt(PLAYER2_LEVEL, binding.player2Spinner.selectedItemPosition)
+            putString(PLAYER1_NAME, binding.namePlayer1ET.text.toString())
+            putString(PLAYER2_NAME, binding.namePlayer2ET.text.toString())
             apply()
         }
         super.onStop()

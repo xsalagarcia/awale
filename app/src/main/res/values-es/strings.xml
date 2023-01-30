@@ -11,7 +11,7 @@
     <string name="save">Guardar</string>
     <string name="play">Jugar</string>
     <string name="minutes">Minutos</string>
-    <string name="play_with_time">Juega con tiempo</string>
+    <string name="play_with_time">Jugar con tiempo</string>
     <string name="custom_board">Personaliza el color del tablero</string>
     <string name="start">Empieza</string>
     <string name="resume">Continua</string>
@@ -25,7 +25,15 @@
     <string name="finsished_game_tie">Partida acabada. ¡Empate!</string>
     <string name="time_over">Partida acabada.</string>
     <string name="couldnt_save_game">No se pudo guardar el juego.</string>
-    <string name="saved_game">Guego guardado.</string>
+    <string name="saved_game">Juego guardado.</string>
+    <string name="load">Cargar</string>
+    <string name="save_this_game">¿Guardar este juego?</string>
+    <string name="save_warning">Si ya tienes otro juego guardado, lo eliminarás.</string>
+    <string name="player1_name">Nombre jugador 1</string>
+    <string name="player2_name">Nombre jugador 2</string>
+    <string name="about_game">Aprende sobre Awale</string>
+    <string name="awaleWeb">https://es.wikipedia.org/wiki/Oware</string>
+    <string name="show_seeds_in_pit">Para mostrar semillas en un hoyo, mantenlo presionado.</string>
     <string-array name="array_levels">
         <item>Humano</item>
         <item>Máquina tonta</item>

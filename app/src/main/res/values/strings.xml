@@ -25,6 +25,14 @@
     <string name="time_over">Time over.</string>
     <string name="couldnt_save_game">Couldn\'t save the game.</string>
     <string name="saved_game">Saved game.</string>
+    <string name="load">Load</string>
+    <string name="save_this_game">Save this game?</string>
+    <string name="save_warning">If you already have another saved game, you\'ll remove it.</string>
+    <string name="player1_name">Player1 name</string>
+    <string name="player2_name">Player2 name</string>
+    <string name="about_game">Learn about Awale</string>
+    <string name="awaleWeb">https://en.wikipedia.org/wiki/Oware</string>
+    <string name="show_seeds_in_pit">To show seeds in a pit, long touch on it.</string>
     <string-array name="array_levels">
         <item>Human</item>
         <item>Silly machine</item>

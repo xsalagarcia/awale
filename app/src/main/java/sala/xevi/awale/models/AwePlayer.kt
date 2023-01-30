@@ -65,6 +65,7 @@ class AwePlayer {
             }
 
             if (listOfMovements.isEmpty()){ // No movements possible (finished game). Terminal node.
+                node.isGameFinished() //updates the players scores if there is no possible movement.
                 if (node.scoreDifferenceP1minusP2() > 0) return Int.MAX_VALUE //player1 wins
                 else if (node.scoreDifferenceP1minusP2() < 0) return Int.MIN_VALUE //player2 wins
                 return node.scoreDifferenceP1minusP2() //It's a tie

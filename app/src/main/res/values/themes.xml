@@ -6,7 +6,7 @@
         <item name="colorPrimaryVariant">#684510</item>
         <item name="colorOnPrimary">@color/white</item>
         <!-- Secondary brand color. -->
-        <item name="colorSecondary">#E44E4E</item>
+        <item name="colorSecondary">@color/secondaryColor</item>
         <item name="colorSecondaryVariant">#953030</item>
         <item name="colorOnSecondary">@color/black</item>
         <!-- Status bar color. -->
@@ -25,5 +25,10 @@
         <!-- Status bar color.
         <item name="android:statusBarColor" tools:targetApi="l">?attr/colorPrimaryVariant</item>-->
         <!-- Customize your theme here. -->
+    </style>
+    <style name="TextViewPlayer">
+        <item name="android:drawableLeft">@android:drawable/ic_media_play</item>
+        <item name="android:drawableTint">@color/secondaryColor</item>
+        <item name="android:textAppearance">@style/TextAppearance.AppCompat.Large</item>
     </style>
 </resources>

@@ -26,10 +26,18 @@
     <string name="time_over">Temps acabat.</string>
     <string name="couldnt_save_game">No s\'ha pogut desar.</string>
     <string name="saved_game">Joc desat.</string>
+    <string name="load">Carregar</string>
+    <string name="save_this_game">Desar aquest joc?</string>
+    <string name="save_warning">Si ja tens un altre joc desat, l\'eliminaràs.</string>
+    <string name="player1_name">Nom jugador 1</string>
+    <string name="player2_name">Nom jugador 2</string>
+    <string name="about_game">Aprèn sobre Awale</string>
+    <string name="awaleWeb">https://ca.wikipedia.org/wiki/Aualé</string>
+    <string name="show_seeds_in_pit">Per mostrar llavors en un forat, mantén-lo pressionat.</string>
     <string-array name="array_levels">
         <item>Humà</item>
-        <item>Màquina tonta</item>
-        <item>No tant tonta</item>
+        <item>Màquina ximple</item>
+        <item>No tant ximple</item>
         <item>Intermedi</item>
         <item>Intel·ligent</item>
         <item>Molt intel·ligent</item>

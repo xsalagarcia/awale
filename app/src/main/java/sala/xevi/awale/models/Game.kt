@@ -160,6 +160,7 @@ class Game (): Parcelable, Externalizable {
 
     /**
      * Checks if game is finished. If it's, returns true.
+     * If it's finished because there is no possible movement, updates scores with the seeds of the own row.
      * @return true if game is finished
      */
     fun isGameFinished(): Boolean {
@@ -180,7 +181,7 @@ class Game (): Parcelable, Externalizable {
             }
         }
 
-        if (isFinished) {
+        if (isFinished) { //finished because no possible movements. Collect the seeds of the own row.
             for (i in 0..5) {
                 player2.score = player2.score + boxes[i]
                 boxes[i] = 0

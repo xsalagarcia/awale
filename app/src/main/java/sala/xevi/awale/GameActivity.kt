@@ -3,8 +3,8 @@ package sala.xevi.awale
 import android.app.Activity
 import android.content.Intent
 import android.content.res.ColorStateList
-import android.graphics.Color
-import android.graphics.Typeface
+import android.content.res.Resources
+import android.graphics.*
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Parcelable
@@ -12,6 +12,8 @@ import android.view.View
 import android.view.ViewPropertyAnimator
 import android.widget.*
 import androidx.annotation.ColorInt
+import androidx.preference.PreferenceManager.getDefaultSharedPreferences
+import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.Runnable
 import sala.xevi.awale.databinding.ActivityGameBinding
 import sala.xevi.awale.exceptions.IllegalMovementException
@@ -45,9 +47,12 @@ class GameActivity () : AppCompatActivity() {
     private var previousGame: Game? = null
 
     /**Task doing clock function*/
-    private lateinit var  clock: TimerTask
+    private var  clock: TimerTask? = null
 
     private var animateMove: ViewPropertyAnimator? = null
+
+    private lateinit var activeColorPlayer: ColorStateList// = ColorStateList(arrayOf(intArrayOf(22952)), intArrayOf(getColor(R.color.secondaryColor)))
+    private lateinit var inactiveColorPlayer: ColorStateList// = ColorStateList(arrayOf(intArrayOf(22952)), intArrayOf(getColor(R.color.light_gray)))
 
 
 
@@ -61,6 +66,8 @@ class GameActivity () : AppCompatActivity() {
         setContentView(binding.root)
 
         ///
+        activeColorPlayer = ColorStateList(arrayOf(intArrayOf(22876)), intArrayOf(getColor(R.color.secondaryColor)))
+        inactiveColorPlayer = ColorStateList(arrayOf(intArrayOf(22876)), intArrayOf(getColor(R.color.light_gray)))
 
         binding.undoP1.setOnClickListener { undoLastMov() }
         binding.undoP2.setOnClickListener { if (game.player2.level == Player.Levels.HUMAN) undoLastMov() else redoMachineMov() }
@@ -81,10 +88,7 @@ class GameActivity () : AppCompatActivity() {
             binding.namePlayer1ET.text = game.player1.name
             binding.namePlayer2ET.text = game.player2.name
 
-            /*
-            val c = Color.parseColor("#30"+Integer.toHexString(binding.player2Background.backgroundTintList!!.defaultColor).substring(2))
-            binding.constraintLayout.backgroundTintList =  ColorStateList(arrayOf(intArrayOf(-android.R.attr.state_enabled)), intArrayOf(c))
-            */
+
 
             checkUndoPlayer2Image()
             updateIVBoxes()
@@ -100,13 +104,22 @@ class GameActivity () : AppCompatActivity() {
                 callAwePlayer()
             }
 
-            //tests
-            //game.boxes = intArrayOf(2,2,2,2,2,2,3,3,3,3,6,2)
-            //updateIVBoxes()
+            //test zone
+            /*game.boxes = intArrayOf(2,2,1,1,2,0,0,1,2,2,2,2)
+            game.player1.score = 21
+            game.player2.score = 12
+            game.activePlayer = game.player2
+            updateScores()
+            updatePlayerInBold()
+            updateIVBoxes()*/
+            //end test zone
         }
-
-
-
+        if (getDefaultSharedPreferences(this).getBoolean(SHOWTIP, true)){
+            Snackbar.make(binding.root, getString(R.string.show_seeds_in_pit), Snackbar.LENGTH_INDEFINITE).apply {
+                setAction(getString(R.string.ok)){ getDefaultSharedPreferences(context).edit().putBoolean(SHOWTIP, false).apply()}
+                show()
+            }
+        }
     }
 
 
@@ -116,7 +129,7 @@ class GameActivity () : AppCompatActivity() {
     private fun callAwePlayer () {
         isAIPlayingOrUIMoving = true
         Thread(Runnable {
-            val boxToPlay = AwePlayer.play(game,game.activePlayer.level.ordinal -1)
+            val boxToPlay = AwePlayer.play(game,(game.activePlayer.level.ordinal -1)*2)
             runOnUiThread {
                 game.playBox(boxToPlay)
                 animateUpdateBoard(boxToPlay, game.lastStateBoxs[boxToPlay])
@@ -130,7 +143,7 @@ class GameActivity () : AppCompatActivity() {
      * Reload
      */
     private fun playAgain () {
-        val newGame = Game(Player(game.player1.name), Player(game.player2.name))
+        val newGame = Game(Player(binding.namePlayer1ET.text.toString()), Player(binding.namePlayer2ET.text.toString()))
         newGame.player2.level = game.player2.level
         newGame.player1.timeLeft = intent.getIntExtra(TIME_GAME, Int.MAX_VALUE)
         newGame.player2.timeLeft = intent.getIntExtra(TIME_GAME, Int.MAX_VALUE)
@@ -210,11 +223,13 @@ class GameActivity () : AppCompatActivity() {
     private fun showMessageFinishedGame() {
 
         isAIPlayingOrUIMoving = true
-        clock.cancel()
+        if (clock != null) {
+            clock!!.cancel()
+        }
         if (game.player2.timeLeft<0 || game.player1.score > game.player2.score)  {
             binding.gameOverTV.text = getString(R.string.finished_game, game.player1.name)
         } else if (game.player1.timeLeft < 0 || game.player2.score > game.player1.score) {
-            binding.gameOverTV.text = getString(R.string.finished_game, game.player1.name)
+            binding.gameOverTV.text = getString(R.string.finished_game, game.player2.name)
         } else {
             binding.gameOverTV.text = getString(R.string.finsished_game_tie)
         }
@@ -229,15 +244,22 @@ class GameActivity () : AppCompatActivity() {
 
 
     /**
-     * Updates the name of the player, in bold the active player.
+     * Updates the style of the player name, depending of it's active or not.
      */
     private fun updatePlayerInBold() {
         if (game.isPlayer1Active()){
+
+            binding.namePlayer1ET.compoundDrawables[0].colorFilter = PorterDuffColorFilter(getColor(R.color.secondaryColor), PorterDuff.Mode.SRC_IN)
+            binding.namePlayer2ET.compoundDrawables[0].colorFilter = PorterDuffColorFilter(getColor(R.color.light_gray), PorterDuff.Mode.SRC_IN)
             binding.namePlayer1ET.setTypeface(null, Typeface.BOLD)
             binding.namePlayer2ET.setTypeface(null, Typeface.NORMAL)
         } else {
+            binding.namePlayer2ET.compoundDrawables[0].colorFilter = PorterDuffColorFilter(getColor(R.color.secondaryColor), PorterDuff.Mode.SRC_IN)
+            binding.namePlayer1ET.compoundDrawables[0].colorFilter = PorterDuffColorFilter(getColor(R.color.light_gray), PorterDuff.Mode.SRC_IN)
             binding.namePlayer2ET.setTypeface(null, Typeface.BOLD)
             binding.namePlayer1ET.setTypeface(null, Typeface.NORMAL)
+
+
         }
     }
 
@@ -272,7 +294,7 @@ class GameActivity () : AppCompatActivity() {
         }
 
         if (game.player1.timeLeft != Int.MAX_VALUE){
-            clock.cancel()
+            clock!!.cancel()
         }
 
         super.onSaveInstanceState(outState)
