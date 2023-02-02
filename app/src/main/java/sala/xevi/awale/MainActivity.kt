@@ -78,6 +78,7 @@ class MainActivity : AppCompatActivity() {
         }
         binding.moreOptionsBtn.setOnClickListener { moreOptionsPressed() }
         binding.infoGameBtn.setOnClickListener { infoGamePressed() }
+        binding.about.setOnClickListener { aboutPressed() }
 
         binding.minutesET.filters= (arrayOf(object: InputFilter {//MAX 999 MINUTES
             override fun filter(source: CharSequence?,start: Int,end: Int,dest: Spanned?,dstart: Int,dend: Int): CharSequence {
@@ -220,6 +221,13 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this, getString(R.string.no_saved_game), Toast.LENGTH_LONG).show()
         }
 
+    }
+
+    /**
+     * Shows about activity. Starts AboutActivity.
+     */
+    private fun aboutPressed() {
+        startActivity(Intent(this, AboutActivity::class.java))
     }
 
     override fun onSaveInstanceState(outState: Bundle) {

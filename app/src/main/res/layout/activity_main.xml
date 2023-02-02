@@ -183,12 +183,11 @@
                             android:layout_weight="1"
                             android:paddingRight="5dp"
                             android:text="@string/player1_name"
-                            android:maxLines="1"
                             android:textAppearance="@style/TextAppearance.AppCompat.Medium" />
 
                         <EditText
                             android:id="@+id/namePlayer1ET"
-                            android:layout_width="wrap_content"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:maxLines="1"
                             android:maxLength="10"
@@ -214,7 +213,7 @@
 
                         <EditText
                             android:id="@+id/namePlayer2ET"
-                            android:layout_width="wrap_content"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:maxLines="1"
@@ -329,14 +328,14 @@
                         android:layout_weight="1"
                         android:text="@string/about_game" />
 
-
-
-
-
-
-
-
-
+                    <TextView
+                        android:id="@+id/about"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:minHeight="48dp"
+                        android:clickable="true"
+                        android:text="@string/see_about_app" />
                 </LinearLayout>
 
 

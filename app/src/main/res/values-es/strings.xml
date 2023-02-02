@@ -34,6 +34,11 @@
     <string name="about_game">Aprende sobre Awale</string>
     <string name="awaleWeb">https://es.wikipedia.org/wiki/Oware</string>
     <string name="show_seeds_in_pit">Para mostrar semillas en un hoyo, mantenlo presionado.</string>
+    <string name="about_app">The app is free, under Apache License 2.0.</string>
+    <string name="license_link">https://www.apache.org/licenses/LICENSE-2.0.txt</string>
+    <string name="see_about_app">See about the app...</string>
+    <string name="see_license">You can see Apache License 2.0 here:</string>
+    <string name="code_link">https://github.com/xsalagarcia/awale</string>
     <string-array name="array_levels">
         <item>Humano</item>
         <item>Máquina tonta</item>
