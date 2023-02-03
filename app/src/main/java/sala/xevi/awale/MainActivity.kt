@@ -37,7 +37,7 @@ class MainActivity : AppCompatActivity() {
     /**A game representation*/
     private var game: Game? = null
 
-    /**An object extending [ActivityResultLauncher<intent>] for receiving data from ActivityGame*/
+    /**An object extending [ActivityResultLauncher<Intent!>] for receiving data from [GameActivity]*/
     private val startForResult = registerForActivityResult( ActivityResultContracts.StartActivityForResult()) { result: ActivityResult ->
         //https://stackoverflow.com/questions/61455381/how-to-replace-startactivityforresult-with-activity-result-apis
         //this must be called out of playPressed function.
@@ -242,6 +242,7 @@ class MainActivity : AppCompatActivity() {
             putInt(MINUTES, Integer.parseInt ( binding.minutesET.text.toString() ))
             putInt(PLAYER2_LEVEL, binding.player2Spinner.selectedItemPosition)
             putInt(SPEED_ANIMATION, binding.animationBar.progress)
+            putBoolean(MORE_OPTIONS, binding.moreOptionsLayout.visibility == View.VISIBLE)
         }
         super.onSaveInstanceState(outState)
     }
@@ -261,6 +262,10 @@ class MainActivity : AppCompatActivity() {
             binding.minutesET.setText(getInt(MINUTES).toString())
             binding.player2Spinner.setSelection(getInt(PLAYER2_LEVEL))
             binding.animationBar.progress = getInt(SPEED_ANIMATION)
+            if (getBoolean(MORE_OPTIONS)){
+                binding.moreOptionsLayout.visibility = View.VISIBLE
+                binding.moreOptionsBtn.rotation = 180f
+            }
         }
 
     }

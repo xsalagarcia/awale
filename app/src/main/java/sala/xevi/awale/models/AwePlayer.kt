@@ -3,6 +3,9 @@ package sala.xevi.awale.models
 import sala.xevi.awale.exceptions.IllegalMovementException
 import java.util.*
 
+/**
+ * Contains methods for AI move.
+ */
 class AwePlayer {
 
     companion object {
@@ -18,18 +21,8 @@ class AwePlayer {
          */
         fun play(game: Game, depth: Int): Int {
 
-            val firstBoxToCheck = if (game.activePlayer == game.player1) 7 else 0
-            val listOfMoves = mutableMapOf<Int, Game>() //a list of moves
-            for (i in firstBoxToCheck..firstBoxToCheck + 5) {
-                try {
-                    val resultGame = game.copyMe()
-                    resultGame.playBox(i)
-                    listOfMoves[i] = resultGame
 
-                } catch (e: IllegalMovementException) {
-                    //do nothing
-                }
-            }
+            val listOfMoves = getPossibleMoves(game)
 
             val scoreOfMovements = mutableMapOf<Int, Int>() //key = movement, key = score got by alphaBetaPrunning
             listOfMoves.forEach { (mov, game) ->
@@ -41,8 +34,6 @@ class AwePlayer {
 
         }
 
-
-
         private fun alphaBetaPruning (node: Game, depth: Int, alpha: Int, beta: Int): Int{
 
             var newBeta = beta
@@ -51,24 +42,10 @@ class AwePlayer {
                 return node.scoreDifferenceP1minusP2()
             }
 
-            val listOfMovements =  mutableMapOf<Int, Game>()
-            val firstBoxToCheck = if (node.activePlayer == node.player1) 6 else 0
-            for (i in firstBoxToCheck..firstBoxToCheck+5){
-                try {
-                    val childNode = node.copyMe()
-                    childNode.playBox(i)
-                    listOfMovements[i] = childNode
-
-                } catch (e: IllegalMovementException){
-                    //do nothing
-                }
-            }
+            val listOfMovements = getPossibleMoves(node)
 
             if (listOfMovements.isEmpty()){ // No movements possible (finished game). Terminal node.
-                node.isGameFinished() //updates the players scores if there is no possible movement.
-                if (node.scoreDifferenceP1minusP2() > 0) return Int.MAX_VALUE //player1 wins
-                else if (node.scoreDifferenceP1minusP2() < 0) return Int.MIN_VALUE //player2 wins
-                return node.scoreDifferenceP1minusP2() //It's a tie
+                return getFinishedGameValue(node)
             }
 
             if (!node.isPlayer1Active()){ //player2 is min
@@ -95,7 +72,8 @@ class AwePlayer {
         }
 
         /**
-         * Given a map of moves <movement, score> returns the best option. The move is represented by the number of the box where the move starts.
+         * Given a map of moves <movement, score> returns the best option.
+         * The move is represented by the number of the box where the move starts.
          * @param movementsMap is a Map<Int, Int> where the key is the number corresponding the box to move. The value is an integer that represents player1.score - player2.score after the move.
          * @param player1Active is a boolean value that will be true if player1 is active. That is, best move is the one that obtains the lower difference between player1.score - player2.score after the move.
          */
@@ -108,6 +86,35 @@ class AwePlayer {
             }
             return filteredMap.keys.elementAt(Random().nextInt(filteredMap.size))
 
+        }
+
+        /**
+         * Returns a map where key is the number of the box move and value is the resulting game.
+         */
+        private fun getPossibleMoves(game: Game): MutableMap<Int, Game> {
+            val listOfMoves =  mutableMapOf<Int, Game>()
+            val firstBoxToCheck = if (game.activePlayer == game.player1) 6 else 0
+            for (i in firstBoxToCheck..firstBoxToCheck+5){
+                try {
+                    val childGame = game.copyMe()
+                    childGame.playBox(i)
+                    listOfMoves[i] = childGame
+
+                } catch (e: IllegalMovementException){
+                    //do nothing
+                }
+            }
+            return listOfMoves
+        }
+
+        /**
+         * Because the value of finished game isn't the difference between player1 and player2
+         */
+        private fun getFinishedGameValue(node: Game): Int {
+            node.isGameFinished() //updates the players scores if there is no possible movement.
+            if (node.scoreDifferenceP1minusP2() > 0) return Int.MAX_VALUE //player1 wins
+            else if (node.scoreDifferenceP1minusP2() < 0) return Int.MIN_VALUE //player2 wins
+            return node.scoreDifferenceP1minusP2() //It's a tie
         }
     }
 }

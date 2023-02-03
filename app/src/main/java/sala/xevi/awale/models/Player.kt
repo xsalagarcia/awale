@@ -8,6 +8,10 @@ import java.io.Externalizable
 import java.io.ObjectInput
 import java.io.ObjectOutput
 
+/**
+ *
+ * Represents a player
+ */
 class Player () : Parcelable, Externalizable {
 
     lateinit var name: String

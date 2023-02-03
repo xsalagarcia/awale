@@ -114,9 +114,9 @@ class GameActivity () : AppCompatActivity() {
             updateIVBoxes()*/
             //end test zone
         }
-        if (getDefaultSharedPreferences(this).getBoolean(SHOWTIP, true)){
+        if (getDefaultSharedPreferences(this).getBoolean(SHOW_TIP, true)){
             Snackbar.make(binding.root, getString(R.string.show_seeds_in_pit), Snackbar.LENGTH_INDEFINITE).apply {
-                setAction(getString(R.string.ok)){ getDefaultSharedPreferences(context).edit().putBoolean(SHOWTIP, false).apply()}
+                setAction(getString(R.string.ok)){ getDefaultSharedPreferences(context).edit().putBoolean(SHOW_TIP, false).apply()}
                 show()
             }
         }
