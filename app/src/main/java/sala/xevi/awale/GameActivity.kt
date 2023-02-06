@@ -129,7 +129,9 @@ class GameActivity () : AppCompatActivity() {
     private fun callAwePlayer () {
         isAIPlayingOrUIMoving = true
         Thread(Runnable {
+
             val boxToPlay = AwePlayer.play(game,(game.activePlayer.level.ordinal -1)*2)
+
             runOnUiThread {
                 game.playBox(boxToPlay)
                 animateUpdateBoard(boxToPlay, game.lastStateBoxs[boxToPlay])

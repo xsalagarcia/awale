@@ -61,7 +61,7 @@ class Game (): Parcelable, Externalizable {
     }
 
 
-    fun changeActivePlayer(){
+    private fun changeActivePlayer(){
         activePlayer = if (activePlayer == player1) player2 else player1
     }
 
@@ -96,14 +96,8 @@ class Game (): Parcelable, Externalizable {
             }
             sowingBox++
         }
-        /*for (i in 1 .. seeds){
-            if (!(seeds > 11 && boxToPlay == (boxToPlay + i)%12)) { //https://www.myriad-online.com/resources/docs/awale/espanol/rules.htm rule 6
-                boxes[(boxToPlay + i) % 12] = boxes[(boxToPlay + i) % 12] + 1
-            }
-        }*/
 
         //reap
-        //(sowingBox-1)%12 és la última en ser plantada
         reapsLastMov = 0
         var boxToReap = 12+(sowingBox-1)%12
         seeds += 12

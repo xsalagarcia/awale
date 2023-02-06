@@ -96,7 +96,7 @@ class MainActivity : AppCompatActivity() {
             binding.minutesET.setText(getDefaultSharedPreferences(this).getInt(TIME_GAME, 10).toString())
             binding.player2Spinner.setSelection(getDefaultSharedPreferences(this).getInt(PLAYER2_LEVEL, 0))
             binding.namePlayer1ET.setText(getDefaultSharedPreferences(this).getString(PLAYER1_NAME, getString(R.string.default_player1)))
-            binding.namePlayer2ET.setText(getDefaultSharedPreferences(this).getString(PLAYER2_NAME, getString(R.string.default_player1)))
+            binding.namePlayer2ET.setText(getDefaultSharedPreferences(this).getString(PLAYER2_NAME, getString(R.string.default_player2)))
 
         }
     }
