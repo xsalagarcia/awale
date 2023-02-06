@@ -1,0 +1,6 @@
+[EN]
+Thank you for using the Awale app.
+This Privacy Policy describes if the app collects some data, why this data is collected and how this data is used.
+The app Awale, in this version (1.0) doesn’t collects any data.
+The data collected in other versions might change.
+You can contact the person in charge by email: xsalagarciatic@gmail.com.
