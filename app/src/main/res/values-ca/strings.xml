@@ -41,8 +41,8 @@
     <string name="code_link">https://github.com/xsalagarcia/awale</string>
     <string-array name="array_levels">
         <item>Humà</item>
-        <item>Màquina ximple</item>
-        <item>No tant ximple</item>
+        <item>Fàcil</item>
+        <item>No tant fàcil</item>
         <item>Intermedi</item>
         <item>Intel·ligent</item>
         <item>Molt intel·ligent</item>

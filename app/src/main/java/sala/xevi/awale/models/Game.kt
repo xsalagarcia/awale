@@ -160,7 +160,9 @@ class Game (): Parcelable, Externalizable {
     fun isGameFinished(): Boolean {
         var isFinished = true
 
-        if (player1.score > 24 || player2.score > 24 || player1.timeLeft <0 || player2.timeLeft < 0) return isFinished
+        if ((player1.score > 24) || (player2.score > 24) || (player1.timeLeft < 0)
+            || (player2.timeLeft < 0) || ((player1.score + player2.score) == 46)
+        ) return isFinished
 
         val firstBoxToCheck = if (activePlayer == player1) 6 else 0
 

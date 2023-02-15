@@ -40,8 +40,8 @@
     <string name="code_link">https://github.com/xsalagarcia/awale</string>
     <string-array name="array_levels">
         <item>Human</item>
-        <item>Silly machine</item>
-        <item>Not so silly</item>
+        <item>Easy</item>
+        <item>Not so easy</item>
         <item>Intermediate</item>
         <item>Smart</item>
         <item>Very smart</item>
